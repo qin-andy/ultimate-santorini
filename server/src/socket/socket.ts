@@ -4,6 +4,6 @@ export function testHandlers(io: Server, socket: ServerSocket) {
   socket.on('chat message', (msg: string) => {
     console.log(msg);
     //socket.emit('status', 200);
-    io.to(socket.id).emit('status', 300);
+    io.to(socket.id).emit('status', 200);
   });
 }

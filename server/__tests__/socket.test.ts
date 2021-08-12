@@ -1,11 +1,11 @@
 import { createServer } from 'http';
 import { AddressInfo } from 'net';
 import { Server, Socket as ServerSocket } from 'socket.io';
-import Client, { Socket as clientSocket } from 'socket.io-client';
+import Client, { Socket as ClientSocket } from 'socket.io-client';
 import { testHandlers } from '../src/socket/socket';
 
 describe('single socket handlers', () => {
-  let io: Server, serverSocket: ServerSocket, clientSocket: clientSocket;
+  let io: Server, serverSocket: ServerSocket, clientSocket: ClientSocket;
 
   beforeAll((done) => {
     const httpServer = createServer();
@@ -38,4 +38,3 @@ describe('single socket handlers', () => {
     clientSocket.emit('chat message', 'Hello, world!');
   });
 });
-
