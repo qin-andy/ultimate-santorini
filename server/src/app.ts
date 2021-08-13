@@ -10,12 +10,9 @@ const io = new Server(server, {
   }
 });
 
-io.on('connect', (socket) => {
-  console.log(socket + ' connected!');
-  socket.on('chat message', (msg: string) => {
-    console.log('msg');
-  })
-})
+// io.on('connect', (socket) => {
+//   console.log(socket + ' connected!');
+// });
 
 app.get('/', (req, res) => {
   res.send("Hello, world!");
