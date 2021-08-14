@@ -5,6 +5,7 @@ import Client, { Socket as ClientSocket } from 'socket.io-client';
 import { PlayerManager } from "../src/socket/PlayerManager";
 
 describe('player manager tests', () => {
+  const DONE_TIMEOUT = 300;
   const CLIENTS_COUNT = 3;
   let port: number;
   let io: Server;
@@ -42,14 +43,14 @@ describe('player manager tests', () => {
   });
 
   beforeEach((done) => {
-    let connectedCount = 0;
+    let connectedCount = 0; // track number of connected sockets
     for (let i = 0; i < CLIENTS_COUNT; i++) {
       let clientSocket = Client(`http://localhost:${port}`);
       clientSockets.push(clientSocket);
       clientSocket.on('connect', () => {
         connectedCount++;
         if (connectedCount === CLIENTS_COUNT) {
-          done();
+          done(); // finish once all sockets are connected
         }
       });
     }
@@ -146,7 +147,7 @@ describe('player manager tests', () => {
     });
 
     it('remove listener from single player', (done) => {
-      let timer = setTimeout(done, 500); // waits for 500 ms
+      let timer = setTimeout(done, DONE_TIMEOUT); // waits for 500 ms
       clientSockets[0].on('test2', (message) => {
         clearTimeout(timer);
         done('message recieved on same listener!');
@@ -172,11 +173,11 @@ describe('player manager tests', () => {
     });
 
     it('remove listener from all', (done) => {
-      let timer = setTimeout(done, 500); // waits for 500 ms
+      let timer = setTimeout(done, DONE_TIMEOUT); // waits for 500 ms
       clientSockets.forEach((clientSocket) => {
         clientSocket.on('all', () => {
           clearTimeout(timer);
-          done('error, message still recieved!');
+          done('error, message still recieved on handler all!');
         });
       });
       playerManager.addListenerToAll('all', (data) => io.emit('all'));

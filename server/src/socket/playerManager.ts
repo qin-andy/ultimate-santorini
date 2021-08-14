@@ -21,7 +21,7 @@ export class Player {
     return this.socket.id;
   }
 
-  addListener(eventName: string, fn: (data: any) => {}): void {
+  addListener(eventName: string, fn: (data: any) => void): void {
     this.socket.on(eventName, fn);
   }
 

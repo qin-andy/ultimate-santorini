@@ -7,29 +7,30 @@ import { Player } from "../src/socket/PlayerManager";
 describe('player class testing', () => {
   let io: Server, serverSocket: ServerSocket, clientSocket: ClientSocket;
   let player1: Player;
+  let port: number;
+  const DONE_TIMEOUT = 300;
 
   beforeAll((done) => {
-    // Create socket server
-    const httpServer = createServer();
-    io = new Server(httpServer);
+    try {
+      // Create socket server
+      const httpServer = createServer();
+      io = new Server(httpServer);
 
-    // Once the server is listening
-    httpServer.listen(() => {
-      // store client socket
-      const port = (httpServer.address() as AddressInfo).port;
-      clientSocket = Client(`http://localhost:${port}`);
+      // Once the server is listening
+      httpServer.listen(() => {
+        // store client socket
+        port = (httpServer.address() as AddressInfo).port;
 
-      // store server socket
-      io.on('connection', (socket) => {
-        serverSocket = socket;
-        player1 = new Player(socket, 'Player 1');
-      });
-
-      // create player for a socket once connected
-      clientSocket.on('connect', () => {
+        // store server socket
+        io.on('connection', (socket) => {
+          serverSocket = socket;
+          player1 = new Player(socket, 'Player 1');
+        });
         done();
       });
-    });
+    } catch (err) {
+      done(err);
+    }
   });
 
   afterAll(() => {
@@ -37,17 +38,56 @@ describe('player class testing', () => {
     clientSocket.close();
   });
 
-  it('get player name', () => {
-    expect(player1.getName()).toBe('Player 1');
+  beforeEach((done) => {
+    clientSocket = Client(`http://localhost:${port}`);
+    clientSocket.on('connect', () => {
+      done();
+    });
   });
 
-  it('set player name', () => {
-    player1.setName('Player 2')
-    expect(player1.getName()).toBe('Player 2');
+  afterEach(() => {
+    clientSocket.close();
   });
 
-  it('get player socket id', () => {
-    let socketId = serverSocket.id;
-    expect(player1.getSocketId()).toBe(socketId);
+  describe('get info', () => {
+    it('get player name', () => {
+      expect(player1.getName()).toBe('Player 1');
+    });
+
+    it('set player name', () => {
+      player1.setName('Player 2')
+      expect(player1.getName()).toBe('Player 2');
+    });
+
+    it('get player socket id', () => {
+      let socketId = serverSocket.id;
+      expect(player1.getSocketId()).toBe(socketId);
+    });
+  });
+
+  describe('adding and removing listseners', () => {
+    it('add listener', (done) => {
+      const listener = (data: any) => {
+        try {
+        expect(data).toBe('test message');
+        done();
+        } catch(err) {
+          done(err);
+        }
+      }
+      player1.addListener('test', listener);
+      clientSocket.emit('test', 'test message');
+    });
+
+    it('remove listener no longer listens to event', (done) => {
+      let timer = setTimeout(done, DONE_TIMEOUT);
+      const listener = (data: any) => {
+        clearTimeout(timer);
+        done('listener still picked up test event!');
+      }
+      player1.addListener('test', listener);
+      player1.removeListener('test');
+      clientSocket.emit('test', 'test message');
+    });
   });
 });
