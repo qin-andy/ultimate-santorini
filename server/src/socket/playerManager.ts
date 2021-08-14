@@ -25,8 +25,8 @@ export class Player {
     this.socket.on(eventName, fn);
   }
 
-  removeListener(eventName: string, fn: (data: any) => {}): void {
-    this.socket.off(eventName, fn);
+  removeListener(eventName: string): void {
+    this.socket.removeAllListeners(eventName);
   }
 }
 
@@ -39,11 +39,20 @@ export class PlayerManager {
     this.idMap = new Map<string, Player>();
   }
 
-  addPlayer(socket: Socket, name: string): number {
+  addPlayer(socket: Socket, name: string): Player {
     let newPlayer = new Player(socket, name);
     this.players.push(newPlayer);
     this.idMap.set(socket.id, newPlayer);
-    return this.players.length;
+    socket.on('disconnect', () => {this.removePlayer(socket.id)});
+    return newPlayer;
+  }
+
+  removePlayer(id: string): Player {
+    let removedPlayer = this.getPlayerById(id);
+    this.players = this.players.filter((player) => {
+      return player.getSocketId() !== removedPlayer.getSocketId();
+    });
+    return removedPlayer;
   }
 
   getIds(): string[] {
@@ -70,20 +79,19 @@ export class PlayerManager {
     throw new Error('Player does not exist!');
   }
 
-  addPlayerListener(id: string, eventName: string, fn: (data: any) => {}): void {
+  addListener(id: string, eventName: string, fn: (data: any) => {}): void {
     this.getPlayerById(id).addListener(eventName, fn);
   }
 
-  removePlayerListener(id: string, eventName: string, fn: (data: any) => {}):void {
-    this.getPlayerById(id).removeListener(eventName, fn);
+  removeListener(id: string, eventName: string): void {
+    this.getPlayerById(id).removeListener(eventName);
   }
 
   addListenerToAll(eventName: string, fn: (data: any) => {}): void {
     this.players.forEach((player) => player.addListener(eventName, fn));
   }
 
-  removeListenerFromAll(eventName: string, fn: (data: any) => {}): void {
-    this.players.forEach((player) => player.removeListener(eventName, fn));
+  removeListenerFromAll(eventName: string): void {
+    this.players.forEach((player) => player.removeListener(eventName));
   }
-
 }
