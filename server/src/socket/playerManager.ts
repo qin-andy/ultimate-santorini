@@ -20,17 +20,29 @@ export class Player {
   getSocketId(): string {
     return this.socket.id;
   }
+
+  addListener(eventName: string, fn: (data: any) => {}): void {
+    this.socket.on(eventName, fn);
+  }
+
+  removeListener(eventName: string, fn: (data: any) => {}): void {
+    this.socket.off(eventName, fn);
+  }
 }
 
 export class PlayerManager {
   players: Player[];
+  idMap: Map<string, Player>;
 
   constructor() {
     this.players = [];
+    this.idMap = new Map<string, Player>();
   }
 
   addPlayer(socket: Socket, name: string): number {
-    this.players.push(new Player(socket, name));
+    let newPlayer = new Player(socket, name);
+    this.players.push(newPlayer);
+    this.idMap.set(socket.id, newPlayer);
     return this.players.length;
   }
 
@@ -50,8 +62,28 @@ export class PlayerManager {
     return this.players.length;
   }
 
-  // todo: get specific player
-  // todo: add listener to specific player
-  // todo: remove listener from specific player
-  // todo: remove specific player
+  getPlayerById(id: string): Player {
+    let player = this.idMap.get(id);
+    if (player) {
+      return player;
+    }
+    throw new Error('Player does not exist!');
+  }
+
+  addPlayerListener(id: string, eventName: string, fn: (data: any) => {}): void {
+    this.getPlayerById(id).addListener(eventName, fn);
+  }
+
+  removePlayerListener(id: string, eventName: string, fn: (data: any) => {}):void {
+    this.getPlayerById(id).removeListener(eventName, fn);
+  }
+
+  addListenerToAll(eventName: string, fn: (data: any) => {}): void {
+    this.players.forEach((player) => player.addListener(eventName, fn));
+  }
+
+  removeListenerFromAll(eventName: string, fn: (data: any) => {}): void {
+    this.players.forEach((player) => player.removeListener(eventName, fn));
+  }
+
 }
