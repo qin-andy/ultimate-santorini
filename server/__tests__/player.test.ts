@@ -35,7 +35,6 @@ describe('player class testing', () => {
 
   afterAll(() => {
     io.close();
-    clientSocket.close();
   });
 
   beforeEach((done) => {
@@ -69,9 +68,9 @@ describe('player class testing', () => {
     it('add listener', (done) => {
       const listener = (data: any) => {
         try {
-        expect(data).toBe('test message');
-        done();
-        } catch(err) {
+          expect(data).toBe('test message');
+          done();
+        } catch (err) {
           done(err);
         }
       }
@@ -88,6 +87,18 @@ describe('player class testing', () => {
       player1.addListener('test', listener);
       player1.removeListener('test');
       clientSocket.emit('test', 'test message');
+    });
+
+    it('disconnecting player', (done) => {
+      try {
+        expect(serverSocket.connected).toBe(true);
+        player1.disconnect();
+        clientSocket.on('disconnect', () => {
+          done();
+        });
+      } catch (err) {
+        done(err)
+      }
     });
   });
 });

@@ -1,12 +1,14 @@
 import { createServer } from 'http';
 import { AddressInfo } from 'net';
+import { disconnect } from 'process';
 import { Server, Socket as ServerSocket } from 'socket.io';
 import Client, { Socket as ClientSocket } from 'socket.io-client';
-import { PlayerManager } from "../src/socket/PlayerManager";
+import { Player, PlayerManager } from "../src/socket/PlayerManager";
 
 describe('player manager tests', () => {
-  const DONE_TIMEOUT = 300;
-  const CLIENTS_COUNT = 3;
+  const DONE_DELAY = 300;
+  const IN_BETWEEN_DELAY = 300;
+  const CLIENTS_COUNT = 70;
   let port: number;
   let io: Server;
   let clientSockets: ClientSocket[];
@@ -27,7 +29,7 @@ describe('player manager tests', () => {
       io.on('connection', (socket) => {
         // increment each socket connected name
         let name = 'Player ' + count;
-        playerManager.addPlayer(socket, name);
+        playerManager.addPlayer(new Player(socket, name));
         count++;
       });
       port = (httpServer.address() as AddressInfo).port;
@@ -50,17 +52,19 @@ describe('player manager tests', () => {
       clientSocket.on('connect', () => {
         connectedCount++;
         if (connectedCount === CLIENTS_COUNT) {
-          done(); // finish once all sockets are connected
+          setTimeout(done, IN_BETWEEN_DELAY); // finish once all sockets are connected
         }
       });
     }
     count = 1;
+
   });
 
-  afterEach(() => {
+  afterEach((done) => {
     clientSockets.forEach((socket) => socket.close());
     playerManager = new PlayerManager();
     clientSockets = [];
+    setTimeout(done, IN_BETWEEN_DELAY);
   });
 
   describe('player manager info', () => {
@@ -147,7 +151,7 @@ describe('player manager tests', () => {
     });
 
     it('remove listener from single player', (done) => {
-      let timer = setTimeout(done, DONE_TIMEOUT); // waits for 500 ms
+      let timer = setTimeout(done, DONE_DELAY); // waits for 500 ms
       clientSockets[0].on('test2', (message) => {
         clearTimeout(timer);
         done('message recieved on same listener!');
@@ -173,7 +177,7 @@ describe('player manager tests', () => {
     });
 
     it('remove listener from all', (done) => {
-      let timer = setTimeout(done, DONE_TIMEOUT); // waits for 500 ms
+      let timer = setTimeout(done, DONE_DELAY); // waits for 500 ms
       clientSockets.forEach((clientSocket) => {
         clientSocket.on('all', () => {
           clearTimeout(timer);
@@ -183,6 +187,28 @@ describe('player manager tests', () => {
       playerManager.addListenerToAll('all', (data) => io.emit('all'));
       playerManager.removeListenerFromAll('all');
       clientSockets[0].emit('all');
+    });
+
+    it('disconnectAll disconnects all sockets', (done) => {
+      // check sockets are connected
+      clientSockets.forEach((clientSocket) => {
+        expect(clientSocket.connected).toBe(true);
+      });
+      try {
+        playerManager.disconnectAll();
+        let disconnectedCount = 0;
+        // check sockets are disconnected after a time
+        clientSockets.forEach((clientSocket) => {
+          clientSocket.on('disconnect', () => {
+            disconnectedCount++;
+            if (disconnectedCount === CLIENTS_COUNT) {
+              done();
+            }
+          });
+        });
+      } catch (err) {
+        done(err);
+      }
     });
   });
 });

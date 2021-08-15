@@ -28,6 +28,10 @@ export class Player {
   removeListener(eventName: string): void {
     this.socket.removeAllListeners(eventName);
   }
+
+  disconnect(): void {
+    this.socket.disconnect();
+  }
 }
 
 export class PlayerManager {
@@ -39,11 +43,13 @@ export class PlayerManager {
     this.idMap = new Map<string, Player>();
   }
 
-  addPlayer(socket: Socket, name: string): Player {
-    let newPlayer = new Player(socket, name);
+  addPlayer(player: Player): Player {
+    let newPlayer = player;
     this.players.push(newPlayer);
-    this.idMap.set(socket.id, newPlayer);
-    socket.on('disconnect', () => {this.removePlayer(socket.id)});
+    this.idMap.set(player.getSocketId(), newPlayer);
+    player.addListener('disconnect', () => {
+      this.removePlayer(newPlayer.getSocketId());
+    });
     return newPlayer;
   }
 
@@ -93,5 +99,12 @@ export class PlayerManager {
 
   removeListenerFromAll(eventName: string): void {
     this.players.forEach((player) => player.removeListener(eventName));
+  }
+
+  disconnectAll(): void {
+    this.players.forEach((player => {
+     player.disconnect();
+    }));
+    this.players = [];
   }
 }
