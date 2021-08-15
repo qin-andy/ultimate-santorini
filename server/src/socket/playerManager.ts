@@ -17,7 +17,7 @@ export class Player {
     return this.displayName;
   }
 
-  getSocketId(): string {
+  getId(): string {
     return this.socket.id;
   }
 
@@ -46,9 +46,9 @@ export class PlayerManager {
   addPlayer(player: Player): Player {
     let newPlayer = player;
     this.players.push(newPlayer);
-    this.idMap.set(player.getSocketId(), newPlayer);
+    this.idMap.set(player.getId(), newPlayer);
     player.addListener('disconnect', () => {
-      this.removePlayer(newPlayer.getSocketId());
+      this.removePlayer(newPlayer.getId());
     });
     return newPlayer;
   }
@@ -56,14 +56,15 @@ export class PlayerManager {
   removePlayer(id: string): Player {
     let removedPlayer = this.getPlayerById(id);
     this.players = this.players.filter((player) => {
-      return player.getSocketId() !== removedPlayer.getSocketId();
+      return player.getId() !== removedPlayer.getId();
     });
+    removedPlayer.disconnect(); // TODO: check this
     return removedPlayer;
   }
 
   getIds(): string[] {
     return this.players.map((player) => {
-      return player.getSocketId();
+      return player.getId();
     });
   }
 

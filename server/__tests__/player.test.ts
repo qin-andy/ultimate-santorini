@@ -60,7 +60,7 @@ describe('player class testing', () => {
 
     it('get player socket id', () => {
       let socketId = serverSocket.id;
-      expect(player1.getSocketId()).toBe(socketId);
+      expect(player1.getId()).toBe(socketId);
     });
   });
 

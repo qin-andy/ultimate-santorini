@@ -1,18 +1,15 @@
-import { Socket } from "socket.io";
 import { Player, PlayerManager } from "./playerManager";
 
 export class Room {
   name: string;
   playerManager: PlayerManager;
   host: Player | null;
-  state: string; // TODO: enum?
   // TODO : settings json
 
-  constructor(name: string, host: Player) {
+  constructor(name: string, host?: Player) {
     this.name = name;
     this.playerManager = new PlayerManager();
     this.host = null;
-    this.state = 'lobby';
   }
 
   addPlayer(player: Player): Player {
@@ -35,8 +32,27 @@ export class Room {
     return this.playerManager.removePlayer(id);
   }
 
-  updateState(state: string): void {
-    this.state = state;
+  getPlayerNames(): string[] {
+    return this.playerManager.players.map((player) => {
+      return player.getName();
+    });
+  }
+
+  getRoomName(): string {
+    return this.name;
+  }
+
+  getHost(): Player {
+    if (this.host) {
+      return this.host;
+    }
+    throw Error(`room ${this.name} has no host!`);
+  }
+
+  close(): void {
+    this.playerManager.disconnectAll();
+    this.playerManager = new PlayerManager();
+    this.host = null;
   }
 
   // TODO: attach new state listeners and remove previous ones on state change

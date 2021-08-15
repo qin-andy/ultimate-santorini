@@ -8,7 +8,7 @@ import { Player, PlayerManager } from "../src/socket/PlayerManager";
 describe('player manager tests', () => {
   const DONE_DELAY = 300;
   const IN_BETWEEN_DELAY = 300;
-  const CLIENTS_COUNT = 70;
+  const CLIENTS_COUNT = 10;
   let port: number;
   let io: Server;
   let clientSockets: ClientSocket[];
@@ -62,8 +62,8 @@ describe('player manager tests', () => {
 
   afterEach((done) => {
     clientSockets.forEach((socket) => socket.close());
-    playerManager = new PlayerManager();
     clientSockets = [];
+    playerManager = new PlayerManager();
     setTimeout(done, IN_BETWEEN_DELAY);
   });
 
@@ -91,7 +91,7 @@ describe('player manager tests', () => {
     it('get player by socket id returns correct player and socket', () => {
       clientSockets.forEach((clientSocket, index) => {
         let player = playerManager.getPlayerById(clientSocket.id);
-        expect(player.getSocketId()).toBe(clientSocket.id);
+        expect(player.getId()).toBe(clientSocket.id);
       });
     });
   });
