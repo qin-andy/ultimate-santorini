@@ -60,4 +60,9 @@ export class Room {
     let { eventName, listenerFactory } = listener;
     this.playerManager.addListenerToAll(eventName, listenerFactory(this));
   }
+
+  removeListenerFromAll(listener: Listener): void {
+    let { eventName } = listener;
+    this.playerManager.removeListenerFromAll(eventName);
+  }
 }

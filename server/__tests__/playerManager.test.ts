@@ -7,9 +7,9 @@ import { Player, PlayerManager } from "../src/socket/PlayerManager";
 import { createNewClientSockets } from './helpers';
 
 describe('player manager tests', () => {
-  const DONE_DELAY = 300;
-  const IN_BETWEEN_DELAY = 300;
-  const CLIENTS_COUNT = 70;
+  const DONE_DELAY = 100;
+  const IN_BETWEEN_DELAY = 100;
+  const CLIENTS_COUNT = 10;
   let port: number;
   let io: Server;
   let clientSockets: ClientSocket[];

@@ -31,6 +31,7 @@ export class Player {
   }
 
   disconnect(): void {
+    this.socket.removeAllListeners();
     this.socket.disconnect();
   }
 }
