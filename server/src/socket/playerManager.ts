@@ -56,12 +56,14 @@ export class PlayerManager {
   }
 
   removePlayer(id: string): Player {
-    let removedPlayer = this.getPlayerById(id);
+    let removedPlayer: Player;
+    removedPlayer = this.getPlayerById(id);
     this.players = this.players.filter((player) => {
       return player.getId() !== removedPlayer.getId();
     });
+    this.idMap.delete(id);
     removedPlayer.socket.removeAllListeners();
-    removedPlayer.disconnect(); // TODO: check this
+    removedPlayer.disconnect(); // TODO: does this throw if already disconnected?
     return removedPlayer;
   }
 
@@ -86,7 +88,7 @@ export class PlayerManager {
     if (player) {
       return player;
     }
-    throw new Error('Player does not exist!');
+    throw Error('player does not exist!');
   }
 
   addListener(id: string, eventName: string, fn: ListenerFactoryPlayer): void {
@@ -107,6 +109,7 @@ export class PlayerManager {
   }
 
   disconnectAll(): void {
+    this.idMap.clear();
     this.players.forEach((player => {
       player.disconnect();
     }));

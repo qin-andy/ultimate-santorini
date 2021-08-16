@@ -4,7 +4,7 @@ import { disconnect } from 'process';
 import { Server, Socket as ServerSocket } from 'socket.io';
 import Client, { Socket as ClientSocket } from 'socket.io-client';
 import { Player, PlayerManager } from "../src/socket/PlayerManager";
-import { createNewClientSockets } from './helpers';
+import { createNewClientSocketsArray } from './helpers';
 
 describe('player manager tests', () => {
   const DONE_DELAY = 100;
@@ -14,24 +14,19 @@ describe('player manager tests', () => {
   let io: Server;
   let clientSockets: ClientSocket[];
   let playerManager: PlayerManager;
-  let count = 1;
+  let playerCount = 1;
 
   beforeAll((done) => {
-    // create playerManager
-    playerManager = new PlayerManager();
-    clientSockets = [];
-
-    // create server instance
     const httpServer = createServer();
     io = new Server(httpServer);
+    playerManager = new PlayerManager();
 
-    // once server is listening
     httpServer.listen(() => {
       io.on('connection', (socket) => {
         // increment each socket connected name
-        let name = 'Player ' + count;
+        let name = 'Player ' + playerCount;
         playerManager.addPlayer(new Player(socket, name));
-        count++;
+        playerCount++;
       });
       port = (httpServer.address() as AddressInfo).port;
       done();
@@ -40,20 +35,20 @@ describe('player manager tests', () => {
 
   afterAll(() => {
     io.close();
+    playerManager.disconnectAll();
     clientSockets.forEach((clientSocket) => {
       clientSocket.close();
     });
   });
 
   beforeEach(async () => {
-    count = 1;
-    clientSockets = await createNewClientSockets(port, CLIENTS_COUNT);
+    playerManager = new PlayerManager();
+    playerCount = 1;
+    clientSockets = await createNewClientSocketsArray(port, CLIENTS_COUNT);
   });
 
   afterEach((done) => {
     clientSockets.forEach((socket) => socket.close());
-    clientSockets = [];
-    playerManager = new PlayerManager();
     setTimeout(done, IN_BETWEEN_DELAY);
   });
 
@@ -104,24 +99,30 @@ describe('player manager tests', () => {
       });
     });
 
-    it('remove first player get names doesnt include first player', (done) => {
+    it.only('remove first player get names doesnt include first player', () => {
       playerManager.removePlayer(clientSockets[0].id);
       clientSockets[0].close();
       clientSockets.shift();
       let expectedIds = clientSockets.map((socket) => {
         return socket.id;
       });
-      try {
-        expect(playerManager.getIds()).toEqual(expect.arrayContaining(expectedIds));
-        done();
-      } catch (err) { // since we're using done, have to catch the error and pass it to done
-        done(err);
-      }
+      expect(playerManager.getIds()).toEqual(expect.arrayContaining(expectedIds));
+    });
+
+    it('remove first player twice throws error', () => {
+      // DOUBLE CHECK THIS; does disconnecting this client socket cause any issues
+      // in teardown?
+      playerManager.removePlayer(clientSockets[0].id);
+      expect(() => playerManager.removePlayer(clientSockets[0].id)).toThrowError();
     });
 
     it('get nonexisent player throws error', () => {
       expect(() => playerManager.getPlayerById('invalid player name')).toThrowError();
     });
+
+    it('remove nonexistaent player throws error', () => {
+      expect(() => playerManager.removePlayer('invalid player name')).toThrowError();
+    })
   });
 
   describe('player listener management', () => {// listener function

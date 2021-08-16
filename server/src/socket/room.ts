@@ -30,12 +30,18 @@ export class Room {
     } else {
       this.host = this.playerManager.players[0];
     }
-    return this.playerManager.removePlayer(id);
+    return removedPlayer;
   }
 
   getPlayerNames(): string[] {
     return this.playerManager.players.map((player) => {
       return player.getName();
+    });
+  }
+
+  getPlayerIds(): string[] {
+    return this.playerManager.players.map((player) => {
+      return player.getId();
     });
   }
 

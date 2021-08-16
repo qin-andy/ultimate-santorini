@@ -4,7 +4,7 @@ import { Server, Socket as ServerSocket } from 'socket.io';
 import Client, { Socket as ClientSocket } from 'socket.io-client';
 import { Player } from "../src/socket/PlayerManager";
 import { Room } from '../src/socket/room';
-import { createNewClientSockets } from './helpers';
+import { createNewClientSocketsArray } from './helpers';
 
 describe('player manager tests', () => {
   const DONE_DELAY = 100;
@@ -14,24 +14,19 @@ describe('player manager tests', () => {
   let io: Server;
   let clientSockets: ClientSocket[];
   let room: Room;
-  let count = 1;
+  let playerCount: number;
 
   beforeAll((done) => {
-    // create room
-    room = new Room('Test Room');
-    clientSockets = [];
-
-    // create server instance
     const httpServer = createServer();
     io = new Server(httpServer);
+    room = new Room('Test Room');
 
-    // once server is listening
     httpServer.listen(() => {
       io.on('connection', (socket) => {
         // increment each socket connected name
-        let name = 'Player ' + count;
+        let name = 'Player ' + playerCount;
         room.addPlayer(new Player(socket, name));
-        count++;
+        playerCount++;
       });
       port = (httpServer.address() as AddressInfo).port;
       done();
@@ -47,17 +42,14 @@ describe('player manager tests', () => {
   });
 
   beforeEach(async () => {
-    count = 1; // incremented when players connect
-    clientSockets = await createNewClientSockets(port, CLIENTS_COUNT);
-
+    room = new Room('Test Room');
+    playerCount = 1; // incremented when players connect
+    clientSockets = await createNewClientSocketsArray(port, CLIENTS_COUNT);
   });
 
   afterEach((done) => {
     clientSockets.forEach((socket) => socket.close());
-    clientSockets = [];
     room.close();
-    room = new Room('Test Room');
-
     setTimeout(done, IN_BETWEEN_DELAY);
   });
 
@@ -73,6 +65,13 @@ describe('player manager tests', () => {
         expectedNames.push('Player ' + (count + 1));
       }
       expect(room.getPlayerNames()).toEqual(expect.arrayContaining(expectedNames));
+    });
+
+    it('get player ids matches client ids', () => {
+      let expectedIds = clientSockets.map((clientSocket) => {
+        return clientSocket.id;
+      });
+      expect(room.getPlayerIds()).toEqual(expect.arrayContaining(expectedIds));
     });
   });
 
@@ -95,8 +94,19 @@ describe('player manager tests', () => {
     });
 
     it('remove player removes player', () => {
+      // DOUBLE CHECK THIS; does disconnecting this client socket cause any issues in teardown?
       let removedName = room.removePlayer(clientSockets[0].id).getName();
       expect(room.getPlayerNames()).not.toEqual(expect.arrayContaining([removedName]));
+    });
+
+    it('remove same player twice throws error', () => {
+
+      room.removePlayer(clientSockets[0].id);
+      expect(() => room.removePlayer(clientSockets[0].id)).toThrowError();
+    });
+
+    it('remove nonexistent player throws error', () => {
+      expect(() => room.removePlayer('invalid player name')).toThrowError();
     });
   });
 

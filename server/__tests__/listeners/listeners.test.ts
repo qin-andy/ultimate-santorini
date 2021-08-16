@@ -4,7 +4,8 @@ import { Server, Socket as ServerSocket } from 'socket.io';
 import Client, { Socket as ClientSocket } from 'socket.io-client';
 import { Player } from '../../src/socket/PlayerManager';
 import { Room } from '../../src/socket/room';
-import { mirrorListener, roomInfoListener } from '../../src/listeners/lobbyListeners';
+import { mirrorListener, roomNameListener } from '../../src/listeners/lobbyListeners';
+import { createNewClientSocketsArray } from '../helpers';
 
 const DONE_DELAY = 100;
 const IN_BETWEEN_DELAY = 100;
@@ -15,30 +16,40 @@ describe('player manager tests', () => {
   let io: Server;
   let clientSockets: ClientSocket[];
   let room: Room;
-  let count = 1;
+  let playerCount = 1;
 
+  /*
+    An HTTP server and a socket.io server instance are created and used
+    by all the tests.
+
+    A Room object (see room.ts) is also initialized in order to test
+    the Listeners (see /listeners/) and how they are added and removed
+
+    For these tests, socket.io server is set up such that when a new
+    client socket connects with the server, they are automatically
+    added to the room as a Player and given a name (e.g. 'Player 3')
+  */
   beforeAll((done) => {
-    // create room
-    room = new Room('Test Room');
-    clientSockets = [];
-
-    // create server instance
     const httpServer = createServer();
     io = new Server(httpServer);
+    room = new Room('Test Room');
 
-    // once server is listening
     httpServer.listen(() => {
       io.on('connection', (socket) => {
         // increment each socket connected name
-        let name = 'Player ' + count;
+        let name = 'Player ' + playerCount;
         room.addPlayer(new Player(socket, name));
-        count++;
+        playerCount++;
       });
       port = (httpServer.address() as AddressInfo).port;
       done();
     });
   });
 
+  /*
+    Teardown: Close the server, each clientsocket, and the room
+    If there's a memory leak, this should be the first place to look
+  */
   afterAll(() => {
     io.close();
     clientSockets.forEach((clientSocket) => {
@@ -47,28 +58,20 @@ describe('player manager tests', () => {
     room.close();
   });
 
-  beforeEach((done) => {
-    let connectedCount = 0; // track number of connected sockets
-
-    // Create CLIENTs_COUNT new sockets and store them in clientSockets
-    for (let i = 0; i < CLIENTS_COUNT; i++) {
-      let clientSocket = Client(`http://localhost:${port}`);
-      clientSockets.push(clientSocket);
-      clientSocket.on('connect', () => {
-        connectedCount++;
-        if (connectedCount === CLIENTS_COUNT) {
-          setTimeout(done, IN_BETWEEN_DELAY); // finish once all sockets are connected
-        }
-      });
-    }
-    count = 1;
+  /*
+    An array of multiple client sockets is used to verify that events
+    on the server sockets are being managed correctly. These are stored
+    in the clientSockets object (see helpers.ts)
+  */
+  beforeEach(async () => {
+    room = new Room('Test Room');
+    clientSockets = await createNewClientSocketsArray(port, CLIENTS_COUNT);
+    playerCount = 1;
   });
 
   afterEach((done) => {
     clientSockets.forEach((socket) => socket.close());
-    clientSockets = [];
     room.close();
-    room = new Room('Test Room');
     setTimeout(done, IN_BETWEEN_DELAY);
   });
 
