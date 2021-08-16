@@ -7,8 +7,6 @@ export interface ChatMessage {
   message: string;
 }
 
-
-
 /*
   The Listener interface wraps all the relevant data that a
   Player class should have access to while registering and event handler

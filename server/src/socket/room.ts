@@ -57,7 +57,7 @@ export class Room {
   }
 
   close(): void {
-    this.playerManager.disconnectAll();
+    this.playerManager.close();
     this.playerManager = new PlayerManager();
     this.host = null;
   }

@@ -108,7 +108,7 @@ export class PlayerManager {
     this.players.forEach((player) => player.removeListener(eventName));
   }
 
-  disconnectAll(): void {
+  close(): void {
     this.idMap.clear();
     this.players.forEach((player => {
       player.disconnect();

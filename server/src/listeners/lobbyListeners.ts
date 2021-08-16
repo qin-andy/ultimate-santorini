@@ -2,9 +2,6 @@ import { Player } from "../socket/playerManager";
 import { Room } from "../socket/room";
 import { ListenerFactoryRoom, Listener } from "../types/types";
 
-
-
-
 export const roomNameListener: Listener = {
   listenerFactory: (room: Room) => {
     return (player?: Player) => {
@@ -19,7 +16,7 @@ export const roomNameListener: Listener = {
 
 /*
   Adds a listener to a player's socket on the event 'mirror'
-  upon which the player will emit to all connected clients 
+  upon which the player will emit to all connected clients
 */
 
 export const mirrorListener: Listener = {

@@ -35,10 +35,11 @@ describe('player manager tests', () => {
 
   afterAll(() => {
     io.close();
-    playerManager.disconnectAll();
+    playerManager.close();
     clientSockets.forEach((clientSocket) => {
       clientSocket.close();
     });
+    if (global.gc) { global.gc() }
   });
 
   beforeEach(async () => {
@@ -201,7 +202,7 @@ describe('player manager tests', () => {
       clientSockets.forEach((clientSocket) => {
         expect(clientSocket.connected).toBe(true);
       });
-      playerManager.disconnectAll();
+      playerManager.close();
       let disconnectPromises = clientSockets.map((clientSocket) => {
         return new Promise<void>((resolve, reject) => {
           clientSocket.on('all', () => {

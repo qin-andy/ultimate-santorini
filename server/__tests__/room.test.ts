@@ -39,6 +39,7 @@ describe('player manager tests', () => {
       clientSocket.close();
     });
     room.close();
+    if (global.gc) { global.gc() }
   });
 
   beforeEach(async () => {
