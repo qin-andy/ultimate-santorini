@@ -91,32 +91,16 @@ describe('player manager tests', () => {
     clientSockets[0].emit('mirror', 'test message');
   });
 
-  it('multiple room creates', async () => {
-    for (let i = 0; i < 10; i++) {
+  it('multiple room creates', async (done) => {
+    for (let i = 0; i < 500; i++) {
 
       clientSockets.forEach((socket) => socket.close());
       clientSockets = [];
       room.close();
       room = new Room('Test Room');
 
-      // Create CLIENTs_COUNT new sockets and store them in clientSockets
-
-      // let connectedCount = 0;
-      // await new Promise<void>((resolve, reject) => {
-      //   for (let i = 0; i < CLIENTS_COUNT; i++) {
-      //     let clientSocket = Client(`http://localhost:${port}`);
-      //     clientSockets.push(clientSocket);
-      //     clientSocket.on('connect', () => {
-      //       connectedCount++;
-      //       if (connectedCount === CLIENTS_COUNT) {
-      //         resolve();
-      //       }
-      //     });
-      //   }
-      // });
-
       let connectPromises = [];
-      for(let i = 0; i < CLIENTS_COUNT; i++) {
+      for (let i = 0; i < CLIENTS_COUNT; i++) {
         let connectPromise = new Promise<void>((resolve, reject) => {
           let clientSocket = Client(`http://localhost:${port}`);
           clientSocket.on('connect', () => {
@@ -127,41 +111,13 @@ describe('player manager tests', () => {
         connectPromises.push(connectPromise);
       };
       await Promise.all(connectPromises);
-
       room.addListenerToAll(mirrorListener);
-
-      let mirrored = new Promise<void>((resolve, reject) => {
-        clientSockets.forEach((clientSocket) => {
-          clientSocket.on('mirror', (data) => {
-            try {
-              expect(data).toBe('test message');
-              resolve();
-            } catch (err) {
-              reject(err);
-            }
-          });
-        });
-      });
-      clientSockets.forEach((clientSocket) => {
-        clientSocket.emit('mirror', 'test message');
-      });
-
-      await mirrored;
-    }
-  });
-});
-
-/*
 
       let mirroredPromises = clientSockets.map((clientSocket) => {
         return new Promise<void>((resolve, reject) => {
           clientSocket.on('mirror', (data) => {
-            try {
-              expect(data).toBe('test message');
-              resolve();
-            } catch (err) {
-              reject(err);
-            }
+            expect(data).toBe('test message');
+            resolve();
           });
         });
       });
@@ -169,4 +125,7 @@ describe('player manager tests', () => {
         clientSocket.emit('mirror', 'test message');
       });
       await Promise.all(mirroredPromises);
-*/
+    }
+    done();
+  });
+});

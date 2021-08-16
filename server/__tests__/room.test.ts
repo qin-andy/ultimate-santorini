@@ -4,6 +4,7 @@ import { Server, Socket as ServerSocket } from 'socket.io';
 import Client, { Socket as ClientSocket } from 'socket.io-client';
 import { Player } from "../src/socket/PlayerManager";
 import { Room } from '../src/socket/room';
+import { createNewClientSockets } from './helpers';
 
 describe('player manager tests', () => {
   const DONE_DELAY = 100;
@@ -45,21 +46,10 @@ describe('player manager tests', () => {
     room.close();
   });
 
-  beforeEach((done) => {
-    let connectedCount = 0; // track number of connected sockets
+  beforeEach(async () => {
+    count = 1; // incremented when players connect
+    clientSockets = await createNewClientSockets(port, CLIENTS_COUNT);
 
-    // Create CLIENTs_COUNT new sockets and store them in clientSockets
-    for (let i = 0; i < CLIENTS_COUNT; i++) {
-      let clientSocket = Client(`http://localhost:${port}`);
-      clientSockets.push(clientSocket);
-      clientSocket.on('connect', () => {
-        connectedCount++;
-        if (connectedCount === CLIENTS_COUNT) {
-          setTimeout(done, IN_BETWEEN_DELAY); // finish once all sockets are connected
-        }
-      });
-    }
-    count = 1;
   });
 
   afterEach((done) => {
@@ -175,17 +165,16 @@ describe('player manager tests', () => {
   });
 
   describe('listener management', () => {
-    it('close room disconnects all sockets', (done) => {
-      let disconnectedCount = 0;
-      clientSockets.forEach((clientSocket) => {
-        clientSocket.on('disconnect', () => {
-          disconnectedCount++;
-          if (disconnectedCount === CLIENTS_COUNT) {
-            done();
-          }
+    it('close room disconnects all sockets', async () => {
+      let disconnectPromises = clientSockets.map((clientSocket) => {
+        return new Promise<void>((resolve, reject) => {
+          clientSocket.on('disconnect', () => {
+            resolve();
+          });
         });
       });
       room.close();
+      await Promise.all(disconnectPromises);
     });
   });
 });

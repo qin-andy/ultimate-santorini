@@ -4,6 +4,7 @@ import { disconnect } from 'process';
 import { Server, Socket as ServerSocket } from 'socket.io';
 import Client, { Socket as ClientSocket } from 'socket.io-client';
 import { Player, PlayerManager } from "../src/socket/PlayerManager";
+import { createNewClientSockets } from './helpers';
 
 describe('player manager tests', () => {
   const DONE_DELAY = 300;
@@ -44,20 +45,9 @@ describe('player manager tests', () => {
     });
   });
 
-  beforeEach((done) => {
-    let connectedCount = 0; // track number of connected sockets
-    for (let i = 0; i < CLIENTS_COUNT; i++) {
-      let clientSocket = Client(`http://localhost:${port}`);
-      clientSockets.push(clientSocket);
-      clientSocket.on('connect', () => {
-        connectedCount++;
-        if (connectedCount === CLIENTS_COUNT) {
-          setTimeout(done, IN_BETWEEN_DELAY); // finish once all sockets are connected
-        }
-      });
-    }
+  beforeEach(async () => {
     count = 1;
-
+    clientSockets = await createNewClientSockets(port, CLIENTS_COUNT);
   });
 
   afterEach((done) => {
@@ -162,18 +152,17 @@ describe('player manager tests', () => {
       clientSockets[0].emit('test1', 'test message');
     });
 
-    it('add listener to all', (done) => {
-      let recievedCount = 0;
-      clientSockets.forEach((clientSocket) => {
-        clientSocket.on('all', () => {
-          recievedCount++;
-          if (recievedCount === clientSockets.length) {
-            done();
-          }
+    it('add listener to all', async () => {
+      let receievedPromises = clientSockets.map((clientSocket) => {
+        return new Promise<void>((resolve, reject) => {
+          clientSocket.on('all', () => {
+            resolve();
+          });
         });
       });
       playerManager.addListenerToAll('all', (data) => () => io.emit('all'));
       clientSockets[0].emit('all');
+      await Promise.all(receievedPromises);
     });
 
     it('remove listener from all', (done) => {
@@ -189,26 +178,37 @@ describe('player manager tests', () => {
       clientSockets[0].emit('all');
     });
 
-    it('disconnectAll disconnects all sockets', (done) => {
+    it('add and remove listeners to all multiple times', async () => {
+      let receievedPromises = clientSockets.map((clientSocket) => {
+        return new Promise<void>((resolve, reject) => {
+          clientSocket.on('all', () => {
+            resolve();
+          });
+        });
+      });
+      for (let i = 0; i < 10; i++) {
+        playerManager.addListenerToAll('all', () => (data) => io.emit('all'));
+        playerManager.removeListenerFromAll('all');
+      }
+      playerManager.addListenerToAll('all', () => (data) => io.emit('all'));
+      clientSockets[0].emit('all');
+      await Promise.all(receievedPromises);
+    });
+
+    it('disconnectAll disconnects all sockets', async () => {
       // check sockets are connected
       clientSockets.forEach((clientSocket) => {
         expect(clientSocket.connected).toBe(true);
       });
-      try {
-        playerManager.disconnectAll();
-        let disconnectedCount = 0;
-        // check sockets are disconnected after a time
-        clientSockets.forEach((clientSocket) => {
-          clientSocket.on('disconnect', () => {
-            disconnectedCount++;
-            if (disconnectedCount === CLIENTS_COUNT) {
-              done();
-            }
+      playerManager.disconnectAll();
+      let disconnectPromises = clientSockets.map((clientSocket) => {
+        return new Promise<void>((resolve, reject) => {
+          clientSocket.on('all', () => {
+            resolve();
           });
         });
-      } catch (err) {
-        done(err);
-      }
+      });
+      Promise.all(disconnectPromises);
     });
   });
 });
