@@ -1,3 +1,4 @@
+import { Listener } from "../types/types";
 import { Player, PlayerManager } from "./playerManager";
 
 export class Room {
@@ -55,8 +56,8 @@ export class Room {
     this.host = null;
   }
 
-  // TODO: attach new state listeners and remove previous ones on state change
-  // TODO: update settings
-  // TODO: display all current players
-  // TODO: update current players display on name change
+  addListenerToAll(listener: Listener): void {
+    let { eventName, listenerFactory } = listener;
+    this.playerManager.addListenerToAll(eventName, listenerFactory(this));
+  }
 }

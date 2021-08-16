@@ -1,4 +1,5 @@
 import { Socket } from "socket.io";
+import { ListenerFactoryPlayer } from "../types/types";
 
 export class Player {
   displayName: string;
@@ -21,7 +22,7 @@ export class Player {
     return this.socket.id;
   }
 
-  addListener(eventName: string, fn: (data: any) => void): void {
+  addListener(eventName: string, fn: (data?: any) => void): void {
     this.socket.on(eventName, fn);
   }
 
@@ -47,7 +48,7 @@ export class PlayerManager {
     let newPlayer = player;
     this.players.push(newPlayer);
     this.idMap.set(player.getId(), newPlayer);
-    player.addListener('disconnect', () => {
+    player.addListener('disconnect', () => () => {
       this.removePlayer(newPlayer.getId());
     });
     return newPlayer;
@@ -58,6 +59,7 @@ export class PlayerManager {
     this.players = this.players.filter((player) => {
       return player.getId() !== removedPlayer.getId();
     });
+    removedPlayer.socket.removeAllListeners();
     removedPlayer.disconnect(); // TODO: check this
     return removedPlayer;
   }
@@ -86,16 +88,17 @@ export class PlayerManager {
     throw new Error('Player does not exist!');
   }
 
-  addListener(id: string, eventName: string, fn: (data: any) => {}): void {
-    this.getPlayerById(id).addListener(eventName, fn);
+  addListener(id: string, eventName: string, fn: ListenerFactoryPlayer): void {
+    let player = this.getPlayerById(id)
+    player.addListener(eventName, fn(player));
   }
 
   removeListener(id: string, eventName: string): void {
     this.getPlayerById(id).removeListener(eventName);
   }
 
-  addListenerToAll(eventName: string, fn: (data: any) => {}): void {
-    this.players.forEach((player) => player.addListener(eventName, fn));
+  addListenerToAll(eventName: string, fn: ListenerFactoryPlayer): void {
+    this.players.forEach((player) => player.addListener(eventName, fn(player)));
   }
 
   removeListenerFromAll(eventName: string): void {
@@ -104,7 +107,7 @@ export class PlayerManager {
 
   disconnectAll(): void {
     this.players.forEach((player => {
-     player.disconnect();
+      player.disconnect();
     }));
     this.players = [];
   }

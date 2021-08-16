@@ -8,7 +8,7 @@ import { Player, PlayerManager } from "../src/socket/PlayerManager";
 describe('player manager tests', () => {
   const DONE_DELAY = 300;
   const IN_BETWEEN_DELAY = 300;
-  const CLIENTS_COUNT = 10;
+  const CLIENTS_COUNT = 70;
   let port: number;
   let io: Server;
   let clientSockets: ClientSocket[];
@@ -135,7 +135,7 @@ describe('player manager tests', () => {
   });
 
   describe('player listener management', () => {// listener function
-    let testFn = (message: string) => io.emit('test2', message);
+    let testFn = () => (message: string) => io.emit('test2', message);
     it('add listener to single player', (done) => {
       // when client receives test2, check data message
       clientSockets[0].on('test2', (message) => {
@@ -172,7 +172,7 @@ describe('player manager tests', () => {
           }
         });
       });
-      playerManager.addListenerToAll('all', (data) => io.emit('all'));
+      playerManager.addListenerToAll('all', (data) => () => io.emit('all'));
       clientSockets[0].emit('all');
     });
 
@@ -184,7 +184,7 @@ describe('player manager tests', () => {
           done('error, message still recieved on handler all!');
         });
       });
-      playerManager.addListenerToAll('all', (data) => io.emit('all'));
+      playerManager.addListenerToAll('all', () => (data) => io.emit('all'));
       playerManager.removeListenerFromAll('all');
       clientSockets[0].emit('all');
     });
