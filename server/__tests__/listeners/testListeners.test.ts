@@ -97,10 +97,7 @@ describe('player manager tests', () => {
       let mirroredPromises: Promise<string>[] = [];
       for (let i = 0; i < 3; i++) {
         mirroredPromises.push(new Promise<string>((resolve, reject) => {
-          const mirrorNotifier = (message: string) => {
-            resolve(message);
-          }
-          clientSockets[0].emit('mirror', 'mirrored message', mirrorNotifier);
+          clientSockets[0].emit('mirror', 'mirrored message', resolve);
         }));
       }
       expect(await Promise.all(mirroredPromises)).toEqual(
@@ -142,54 +139,46 @@ describe('player manager tests', () => {
     it('multiple add then remove mirror listener, but finally added', async () => {
       // only tests a single clientsocket
       let mirroredPromise = new Promise<string>((resolve, reject) => {
-        const mirrorNotifier = (message: string) => {
-          resolve(message);
-        }
         for (let i = 0; i < 20; i++) {
           room.addListenerToAll(mirrorListener);
           room.removeListenerFromAll(mirrorListener);
         }
         room.addListenerToAll(mirrorListener);
-        clientSockets[0].emit('mirror', 'mirrored message', mirrorNotifier);
+        clientSockets[0].emit('mirror', 'mirrored message', resolve);
       });
       expect(await mirroredPromise).toBe('mirrored message');;
     });
 
-    it('multiple room creates and mirror listener tests', () => {
-      return new Promise<void>(async (superResolve, superReject) => {
-        for (let i = 0; i < 10; i++) {
-          clientSockets.forEach((socket) => socket.close());
-          clientSockets = [];
-          room.close();
-          room = new Room('Test Room');
+    it.only('multiple room creates and mirror listener tests', async () => {
+      for (let i = 0; i < 10; i++) {
+        clientSockets.forEach((socket) => socket.close());
+        clientSockets = [];
+        room.close();
+        room = new Room('Test Room');
 
-          let connectPromises = [];
-          for (let i = 0; i < CLIENTS_COUNT; i++) {
-            let connectPromise = new Promise<void>((resolve, reject) => {
-              let clientSocket = Client(`http://localhost:${port}`);
-              clientSocket.on('connect', () => {
-                clientSockets.push(clientSocket);
-                resolve();
-              });
-            });
-            connectPromises.push(connectPromise);
-          };
-          await Promise.all(connectPromises);
-
-          room.addListenerToAll(mirrorListener);
-          let mirroredPromises = clientSockets.map((clientSocket) => {
-            return new Promise<void>((resolve, reject) => {
-              const mirrorNotifier = (message: string) => {
-                expect(message).toBe('mirrored message');
-                resolve();
-              }
-              clientSocket.emit('mirror', 'mirrored message', mirrorNotifier);
+        let connectPromises = [];
+        for (let i = 0; i < CLIENTS_COUNT; i++) {
+          let connectPromise = new Promise<void>((resolve, reject) => {
+            let clientSocket = Client(`http://localhost:${port}`);
+            clientSocket.on('connect', () => {
+              clientSockets.push(clientSocket);
+              resolve();
             });
           });
-          await Promise.all(mirroredPromises);
-        }
-        superResolve();
-      });
+          connectPromises.push(connectPromise);
+        };
+        await Promise.all(connectPromises);
+
+        room.addListenerToAll(mirrorListener);
+        let mirroredPromises = clientSockets.map((clientSocket) => {
+          return new Promise<void>((resolve, reject) => {
+            clientSocket.emit('mirror', 'mirrored message', resolve);
+          });
+        });
+        let expectedArray = (new Array<string>(CLIENTS_COUNT)).fill('mirrored message');
+        expect(await Promise.all(mirroredPromises))
+          .toEqual(expect.arrayContaining(expectedArray));
+      }
     });
   });
 });

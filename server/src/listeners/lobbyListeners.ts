@@ -15,7 +15,7 @@ export const roomNameAcknowledger: Listener = {
   eventName: 'get room name'
 }
 
-// acknowledgement, returns players list
+// acknowledgement, returns players list for the room
 export const getPlayerListAcknowledger: Listener = {
   listenerFactory: (room: Room) => {
     return (player?: Player) => {
@@ -27,7 +27,7 @@ export const getPlayerListAcknowledger: Listener = {
   eventName: 'get player list'
 }
 
-// listener, updates name changes
+// listener, change's the player's name
 export const playerListListener: Listener = {
   listenerFactory: (room: Room) => {
     return (player?: Player) => {

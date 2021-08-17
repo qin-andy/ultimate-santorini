@@ -10,10 +10,6 @@ export class Player {
     this.displayName = name;
   }
 
-  setName(name: string): void {
-    this.displayName = name;
-  }
-
   getName(): string {
     return this.displayName;
   }

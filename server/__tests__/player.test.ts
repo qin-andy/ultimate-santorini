@@ -53,11 +53,6 @@ describe('player class testing', () => {
       expect(player1.getName()).toBe('Player 1');
     });
 
-    it('set player name', () => {
-      player1.setName('Player 2')
-      expect(player1.getName()).toBe('Player 2');
-    });
-
     it('get player socket id', () => {
       let socketId = serverSocket.id;
       expect(player1.getId()).toBe(socketId);

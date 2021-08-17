@@ -4,8 +4,8 @@ import { Server } from 'socket.io';
 import { Socket as ClientSocket } from 'socket.io-client';
 import { Player } from '../../src/socket/PlayerManager';
 import { Room } from '../../src/socket/room';
-import { roomNameAcknowledger } from '../../src/listeners/lobbyListeners';
 import { createNewClientSocketsArray } from '../helpers';
+import { getPlayerListAcknowledger, roomNameAcknowledger } from '../../src/listeners/lobbyListeners';
 
 const DONE_DELAY = 100;
 const IN_BETWEEN_DELAY = 100;
@@ -79,10 +79,7 @@ describe('player manager tests', () => {
   describe('info getters', () => {
     it('room name gets room name', async () => {
       let roomNamePromise = new Promise<string>((resolve, reject) => {
-        const roomNameNotifier = (roomName: string) => {
-          resolve(roomName);
-        }
-        clientSockets[0].emit('get room name', null, roomNameNotifier);
+        clientSockets[0].emit('get room name', null, resolve);
       });
       room.addListenerToAll(roomNameAcknowledger);
       expect(await roomNamePromise).toBe('Test Room');
@@ -91,15 +88,18 @@ describe('player manager tests', () => {
     it('room name gets room name 2', async () => {
       room.name = 'Room Name 2'
       let roomNamePromise = new Promise<string>((resolve, reject) => {
-        const roomNameNotifier = (roomName: string) => {
-          resolve(roomName);
-        }
-        clientSockets[0].emit('get room name', null, roomNameNotifier);
+        clientSockets[0].emit('get room name', null, resolve);
       });
       room.addListenerToAll(roomNameAcknowledger);
       expect(await roomNamePromise).toBe('Room Name 2');
     });
 
-    it.todo('get player names');
+    it.skip('get player names', () => {
+      room.addListenerToAll(getPlayerListAcknowledger);
+      let playerListPromise = new Promise<string[]>((resolve, reject) => {
+        clientSockets[0].emit('get room name', null, resolve);
+      });
+    });
   });
+
 });
