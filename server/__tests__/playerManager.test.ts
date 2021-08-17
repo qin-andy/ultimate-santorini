@@ -1,13 +1,12 @@
 import { Server, Socket as ServerSocket } from 'socket.io';
-import Client, { Socket as ClientSocket } from 'socket.io-client';
+import { Socket as ClientSocket } from 'socket.io-client';
 import { PlayerManager } from "../src/game/PlayerManager";
 import { Player } from '../src/game/player';
 import { createClientSockets, createSocketPairs, createSocketServer } from './helpers';
 
 describe('player manager tests', () => {
-  const DONE_DELAY = 100;
   const IN_BETWEEN_DELAY = 100;
-  const CLIENTS_COUNT = 10;
+  const CLIENTS_COUNT = 5;
   let port: number;
   let io: Server;
   let clientSockets: ClientSocket[];
