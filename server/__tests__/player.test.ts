@@ -3,6 +3,7 @@ import { AddressInfo } from 'net';
 import { Server, Socket as ServerSocket } from 'socket.io';
 import Client, { Socket as ClientSocket } from 'socket.io-client';
 import { Player } from "../src/socket/PlayerManager";
+import { createClientSockets, createSocketPairs, createSocketServer } from './helpers';
 
 describe('player class testing', () => {
   let io: Server, serverSocket: ServerSocket, clientSocket: ClientSocket;
@@ -10,41 +11,25 @@ describe('player class testing', () => {
   let port: number;
   const DONE_TIMEOUT = 300;
 
-  beforeAll((done) => {
-    try {
-      // Create socket server
-      const httpServer = createServer();
-      io = new Server(httpServer);
-
-      // Once the server is listening
-      httpServer.listen(() => {
-        // store client socket
-        port = (httpServer.address() as AddressInfo).port;
-
-        // store server socket
-        io.on('connection', (socket) => {
-          serverSocket = socket;
-          player1 = new Player(socket, 'Player 1');
-        });
-        done();
-      });
-    } catch (err) {
-      done(err);
-    }
+  beforeAll(async () => {
+    [io, port] = await createSocketServer();
+    io.on('connect', (socket) => {
+      player1 = new Player(socket, 'Player 1');
+    });
   });
 
   afterAll(() => {
     io.close();
   });
 
-  beforeEach((done) => {
-    clientSocket = Client(`http://localhost:${port}`);
-    clientSocket.on('connect', () => {
-      done();
-    });
+  beforeEach(async () => {
+    let socketPair = (await createSocketPairs(io, port, 1));
+    clientSocket = socketPair[0][0];
+    serverSocket = socketPair[1][0];
   });
 
   afterEach(() => {
+    serverSocket.removeAllListeners();
     clientSocket.close();
   });
 

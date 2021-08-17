@@ -3,7 +3,7 @@ import { AddressInfo } from 'net';
 import { Server, Socket as ServerSocket } from 'socket.io';
 import Client, { Socket as ClientSocket } from 'socket.io-client';
 import { Player, PlayerManager } from "../src/socket/PlayerManager";
-import { createNewClientSocketsArray } from './helpers';
+import { createSocketPairs, createSocketServer } from './helpers';
 
 describe('player manager tests', () => {
   const DONE_DELAY = 100;
@@ -12,29 +12,22 @@ describe('player manager tests', () => {
   let port: number;
   let io: Server;
   let clientSockets: ClientSocket[];
+  let serverSockets: ServerSocket[];
   let playerManager: PlayerManager;
   let playerCount = 1;
 
-  beforeAll((done) => {
-    const httpServer = createServer();
-    io = new Server(httpServer);
-    playerManager = new PlayerManager();
-
-    httpServer.listen(() => {
-      io.on('connection', (socket) => {
-        // increment each socket connected name
-        let name = 'Player ' + playerCount;
-        playerManager.addPlayer(new Player(socket, name));
-        playerCount++;
-      });
-      port = (httpServer.address() as AddressInfo).port;
-      done();
-    });
+  beforeAll(async () => {
+    [io, port] = await createSocketServer();
+    io.on('connect', (socket) => {
+      playerManager.addPlayer(new Player(socket, 'Player ' + playerCount));
+      playerCount++;
+    })
+    clientSockets = [];
+    serverSockets = [];
   });
 
   afterAll(() => {
     io.close();
-    playerManager.close();
     clientSockets.forEach((clientSocket) => {
       clientSocket.close();
     });
@@ -44,7 +37,7 @@ describe('player manager tests', () => {
   beforeEach(async () => {
     playerManager = new PlayerManager();
     playerCount = 1;
-    clientSockets = await createNewClientSocketsArray(port, CLIENTS_COUNT);
+    [clientSockets, serverSockets] = await createSocketPairs(io, port, CLIENTS_COUNT);
   });
 
   afterEach((done) => {
@@ -110,8 +103,6 @@ describe('player manager tests', () => {
     });
 
     it('remove first player twice throws error', () => {
-      // DOUBLE CHECK THIS; does disconnecting this client socket cause any issues
-      // in teardown?
       playerManager.removePlayer(clientSockets[0].id);
       expect(() => playerManager.removePlayer(clientSockets[0].id)).toThrowError();
     });
