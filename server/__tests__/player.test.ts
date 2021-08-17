@@ -50,50 +50,12 @@ describe('player class testing', () => {
 
   describe('get info', () => {
     it('get player name', () => {
-      expect(player1.getName()).toBe('Player 1');
+      expect(player1.name).toBe('Player 1');
     });
 
     it('get player socket id', () => {
       let socketId = serverSocket.id;
-      expect(player1.getId()).toBe(socketId);
-    });
-  });
-
-  describe('adding and removing listseners', () => {
-    it('add listener', (done) => {
-      const listener = (data: any) => {
-        try {
-          expect(data).toBe('test message');
-          done();
-        } catch (err) {
-          done(err);
-        }
-      }
-      player1.addListener('test', listener);
-      clientSocket.emit('test', 'test message');
-    });
-
-    it('remove listener no longer listens to event', (done) => {
-      let timer = setTimeout(done, DONE_TIMEOUT);
-      const listener = (data: any) => {
-        clearTimeout(timer);
-        done('listener still picked up test event!');
-      }
-      player1.addListener('test', listener);
-      player1.removeListener('test');
-      clientSocket.emit('test', 'test message');
-    });
-
-    it('disconnecting player', (done) => {
-      try {
-        expect(serverSocket.connected).toBe(true);
-        player1.disconnect();
-        clientSocket.on('disconnect', () => {
-          done();
-        });
-      } catch (err) {
-        done(err)
-      }
+      expect(player1.id).toBe(socketId);
     });
   });
 });

@@ -2,33 +2,15 @@ import { Socket } from "socket.io";
 import { ListenerFactoryPlayer } from "../types/types";
 
 export class Player {
-  displayName: string;
+  name: string;
   socket: Socket;
+  id: string;
 
-  constructor(sock: Socket, name: string) {
+  constructor(sock: Socket, name?: string) {
     this.socket = sock;
-    this.displayName = name;
-  }
-
-  getName(): string {
-    return this.displayName;
-  }
-
-  getId(): string {
-    return this.socket.id;
-  }
-
-  addListener(eventName: string, fn: (data?: any) => void): void {
-    this.socket.on(eventName, fn);
-  }
-
-  removeListener(eventName: string): void {
-    this.socket.removeAllListeners(eventName);
-  }
-
-  disconnect(): void {
-    this.socket.removeAllListeners();
-    this.socket.disconnect();
+    this.name = sock.id;
+    this.id = sock.id;
+    if (name) this.name = name;
   }
 }
 
@@ -42,36 +24,35 @@ export class PlayerManager {
   }
 
   addPlayer(player: Player): Player {
-    let newPlayer = player;
-    this.players.push(newPlayer);
-    this.idMap.set(player.getId(), newPlayer);
-    player.addListener('disconnect', () => () => {
-      this.removePlayer(newPlayer.getId());
+    this.players.push(player);
+    this.idMap.set(player.id, player);
+    player.socket.on('disconnect', () => () => {
+      this.removePlayer(player.id);
     });
-    return newPlayer;
+    return player;
   }
 
   removePlayer(id: string): Player {
     let removedPlayer: Player;
     removedPlayer = this.getPlayerById(id);
     this.players = this.players.filter((player) => {
-      return player.getId() !== removedPlayer.getId();
+      return player.id !== removedPlayer.id;
     });
     this.idMap.delete(id);
     removedPlayer.socket.removeAllListeners();
-    removedPlayer.disconnect(); // TODO: does this throw if already disconnected?
+    removedPlayer.socket.disconnect();
     return removedPlayer;
   }
 
   getIds(): string[] {
     return this.players.map((player) => {
-      return player.getId();
+      return player.id;
     });
   }
 
   getNames(): string[] {
     return this.players.map((player) => {
-      return player.getName();
+      return player.name;
     });
   }
 
@@ -87,27 +68,10 @@ export class PlayerManager {
     throw Error('player does not exist!');
   }
 
-  addListener(id: string, eventName: string, fn: ListenerFactoryPlayer): void {
-    let player = this.getPlayerById(id)
-    player.addListener(eventName, fn(player));
-  }
-
-  removeListener(id: string, eventName: string): void {
-    this.getPlayerById(id).removeListener(eventName);
-  }
-
-  addListenerToAll(eventName: string, fn: ListenerFactoryPlayer): void {
-    this.players.forEach((player) => player.addListener(eventName, fn(player)));
-  }
-
-  removeListenerFromAll(eventName: string): void {
-    this.players.forEach((player) => player.removeListener(eventName));
-  }
-
   close(): void {
     this.idMap.clear();
     this.players.forEach((player => {
-      player.disconnect();
+      player.socket.disconnect();
     }));
     this.players = [];
   }

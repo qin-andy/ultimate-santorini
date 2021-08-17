@@ -1,6 +1,5 @@
 import { createServer } from 'http';
 import { AddressInfo } from 'net';
-import { disconnect } from 'process';
 import { Server, Socket as ServerSocket } from 'socket.io';
 import Client, { Socket as ClientSocket } from 'socket.io-client';
 import { Player, PlayerManager } from "../src/socket/PlayerManager";
@@ -77,7 +76,7 @@ describe('player manager tests', () => {
     it('get player by socket id returns correct player and socket', () => {
       clientSockets.forEach((clientSocket, index) => {
         let player = playerManager.getPlayerById(clientSocket.id);
-        expect(player.getId()).toBe(clientSocket.id);
+        expect(player.id).toBe(clientSocket.id);
       });
     });
   });
@@ -124,87 +123,5 @@ describe('player manager tests', () => {
     it('remove nonexistaent player throws error', () => {
       expect(() => playerManager.removePlayer('invalid player name')).toThrowError();
     })
-  });
-
-  describe('player listener management', () => {// listener function
-    let testFn = () => (message: string) => io.emit('test2', message);
-    it('add listener to single player', async () => {
-      playerManager.addListener(clientSockets[0].id, 'test1', testFn);
-      // when client receives test2, check data message
-      let messagePromise = new Promise<string>((resolve, reject) => {
-        clientSockets[0].on('test2', (message) => {
-          resolve(message);
-        });
-        clientSockets[0].emit('test1', 'test message');
-      });
-      expect(await messagePromise).toBe('test message');
-    });
-
-    it('remove listener from single player', (done) => {
-      let timer = setTimeout(done, DONE_DELAY); // waits for 500 ms
-      clientSockets[0].on('test2', (message) => {
-        clearTimeout(timer);
-        done('message recieved on same listener!');
-      });
-
-      playerManager.addListener(clientSockets[0].id, 'test1', testFn);
-      playerManager.removeListener(clientSockets[0].id, 'test1');
-      clientSockets[0].emit('test1', 'test message');
-    });
-
-    it('add listener to all', async () => {
-      let receievedPromises = clientSockets.map((clientSocket) => {
-        return new Promise<void>((resolve, reject) => {
-          clientSocket.on('all', resolve);
-        });
-      });
-      playerManager.addListenerToAll('all', (data) => () => io.emit('all'));
-      clientSockets[0].emit('all');
-      await Promise.all(receievedPromises);
-    });
-
-    it('remove listener from all', (done) => {
-      let timer = setTimeout(done, DONE_DELAY); // waits for 500 ms
-      clientSockets.forEach((clientSocket) => {
-        clientSocket.on('all', () => {
-          clearTimeout(timer);
-          done('error, message still recieved on handler all!');
-        });
-      });
-      playerManager.addListenerToAll('all', () => (data) => io.emit('all'));
-      playerManager.removeListenerFromAll('all');
-      clientSockets[0].emit('all');
-    });
-
-    it('add and remove listeners to all multiple times', async () => {
-      let receievedPromises = clientSockets.map((clientSocket) => {
-        return new Promise<void>((resolve, reject) => {
-          clientSocket.on('all', resolve);
-        });
-      });
-      for (let i = 0; i < 10; i++) {
-        playerManager.addListenerToAll('all', () => (data) => io.emit('all'));
-        playerManager.removeListenerFromAll('all');
-      }
-      playerManager.addListenerToAll('all', () => (data) => io.emit('all'));
-      clientSockets[0].emit('all');
-      await Promise.all(receievedPromises);
-    });
-
-    it('disconnectAll disconnects all sockets', async () => {
-      // check sockets are connected
-      clientSockets.forEach((clientSocket) => {
-        expect(clientSocket.connected).toBe(true);
-      });
-      let disconnectPromises = clientSockets.map((clientSocket) => {
-        return new Promise<void>((resolve, reject) => {
-          clientSocket.on('disconnect', () => {
-            resolve();
-          });
-        });
-      });
-      playerManager.close();
-      await Promise.all(disconnectPromises);
-    });
   });
 });
