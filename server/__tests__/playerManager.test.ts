@@ -11,17 +11,21 @@ describe('player manager tests', () => {
   let io: Server;
   let clientSockets: ClientSocket[];
   let serverSockets: ServerSocket[];
+  let players: Player[];
   let playerManager: PlayerManager;
   let playerCount = 1;
 
   beforeAll(async () => {
     [io, port] = await createSocketServer();
-    io.on('connect', (socket) => {
-      playerManager.addPlayer(new Player(socket, 'Player ' + playerCount));
-      playerCount++;
-    })
     clientSockets = [];
     serverSockets = [];
+    players = [];
+    io.on('connect', (socket) => {
+      let newPlayer = new Player(socket, 'Player ' + playerCount)
+      players.push(newPlayer);
+      playerManager.addPlayer(newPlayer);
+      playerCount++;
+    })
   });
 
   afterAll(() => {
@@ -40,6 +44,7 @@ describe('player manager tests', () => {
 
   afterEach((done) => {
     clientSockets.forEach((socket) => socket.close());
+    players = [];
     setTimeout(done, IN_BETWEEN_DELAY);
   });
 
@@ -73,6 +78,10 @@ describe('player manager tests', () => {
   });
 
   describe('adding and removing players', () => {
+    it('players list matches', () => {
+      expect(playerManager.players).toEqual(expect.arrayContaining(players));
+    });
+
     it('add new players get names returns new ids', async () => {
       let newClientSocket = (await createClientSockets(port, 1))[0];
       clientSockets.push(newClientSocket);

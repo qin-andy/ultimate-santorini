@@ -59,7 +59,7 @@ describe('player manager tests', () => {
       expect(game.playerManager.getCount()).toBe(3);
     });
 
-    it('game playerManager has correct info 1', async () => {
+    it('game playerManager has correct info 2', async () => {
       let players: Player[] = [];
       io.on('connect', (serverSocket) => {
         let newPlayer = new Player(serverSocket, 'Player ' + playerCount);
