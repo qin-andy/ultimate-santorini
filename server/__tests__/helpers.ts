@@ -8,21 +8,16 @@ import Client, { Socket as ClientSocket } from 'socket.io-client';
 */
 export const createNewClientSocketsArray = async (port: number, count: number) => {
   return new Promise<ClientSocket[]>(async (resolve, reject) => {
-    let clientSockets: ClientSocket[] = [];
-    let connectPromises = [];
-    for (let i = 0; i < count; i++) {
+    let connectPromises: Promise<ClientSocket>[] = [];
 
-      // Each socket connection is wrapped in its own promise
-      let connectPromise = new Promise<void>((resolve, reject) => {
+    for (let i = 0; i < count; i++) {
+      connectPromises.push(new Promise<ClientSocket>((resolve, reject) => {
         let clientSocket = Client(`http://localhost:${port}`);
-        clientSockets.push(clientSocket);
-        clientSocket.on('connect', resolve);
-      });
-      connectPromises.push(connectPromise);
+        clientSocket.on('connect', () => resolve(clientSocket));
+      }));
     };
 
     // Promises are run concurrently using Promise.all
-    await Promise.all(connectPromises);
-    resolve(clientSockets);
+    resolve(await Promise.all(connectPromises));
   });
 }

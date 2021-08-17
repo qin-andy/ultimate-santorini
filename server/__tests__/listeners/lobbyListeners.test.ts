@@ -9,7 +9,7 @@ import { createNewClientSocketsArray } from '../helpers';
 
 const DONE_DELAY = 100;
 const IN_BETWEEN_DELAY = 100;
-const CLIENTS_COUNT = 3;
+const CLIENTS_COUNT = 3; // DO NOT CHANGE FOR THIS TEST SUITE
 
 describe('player manager tests', () => {
   let port: number;
@@ -77,29 +77,29 @@ describe('player manager tests', () => {
   });
 
   describe('info getters', () => {
-    it.only('room name gets room name', () => {
-      let roomNamePromise = new Promise<void>((resolve, reject) => {
+    it('room name gets room name', async () => {
+      let roomNamePromise = new Promise<string>((resolve, reject) => {
         const roomNameNotifier = (roomName: string) => {
-          expect(roomName).toBe('Test Room');
-          resolve();
+          resolve(roomName);
         }
-        clientSockets[0].emit('room name', null, roomNameNotifier);
+        clientSockets[0].emit('get room name', null, roomNameNotifier);
       });
       room.addListenerToAll(roomNameAcknowledger);
-      return roomNamePromise;
+      expect(await roomNamePromise).toBe('Test Room');
     });
 
-    it('room name gets room name 2', () => {
+    it('room name gets room name 2', async () => {
       room.name = 'Room Name 2'
-      let roomNamePromise = new Promise<void>((resolve, reject) => {
-        clientSockets[0].on('room name', (data: string) => {
-          expect(data).toBe('Room Name 2');
-          resolve();
-        });
+      let roomNamePromise = new Promise<string>((resolve, reject) => {
+        const roomNameNotifier = (roomName: string) => {
+          resolve(roomName);
+        }
+        clientSockets[0].emit('get room name', null, roomNameNotifier);
       });
       room.addListenerToAll(roomNameAcknowledger);
-      clientSockets[0].emit('room name');
-      return roomNamePromise;
+      expect(await roomNamePromise).toBe('Room Name 2');
     });
+
+    it.todo('get player names');
   });
 });

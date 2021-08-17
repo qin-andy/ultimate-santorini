@@ -78,16 +78,15 @@ describe('player manager tests', () => {
 
   describe('room listener management infrastructure tests with mirror', () => {
     // only tests a single clientsocket
-    it('add mirror listener', () => {
+    it('add mirror listener', async () => {
       room.addListenerToAll(mirrorListener);
-      let mirroredPromise = new Promise<void>((resolve, reject) => {
+      let mirroredPromise = new Promise<string>((resolve, reject) => {
         const mirrorNotifier = (message: string) => {
-          expect(message).toBe('mirrored message');
-          resolve();
+          resolve(message);
         }
         clientSockets[0].emit('mirror', 'mirrored message', mirrorNotifier);
       });
-      return mirroredPromise;
+      expect(await mirroredPromise).toBe('mirrored message');;
     });
 
     it('multiple add mirror listeners should duplicate message', async () => {
@@ -95,17 +94,18 @@ describe('player manager tests', () => {
       room.addListenerToAll(mirrorListener);
       room.addListenerToAll(mirrorListener);
       room.addListenerToAll(mirrorListener);
-      let mirroredPromises: Promise<void>[] = [];
+      let mirroredPromises: Promise<string>[] = [];
       for (let i = 0; i < 3; i++) {
-        mirroredPromises.push(new Promise<void>((resolve, reject) => {
+        mirroredPromises.push(new Promise<string>((resolve, reject) => {
           const mirrorNotifier = (message: string) => {
-            expect(message).toBe('mirrored message');
-            resolve();
+            resolve(message);
           }
           clientSockets[0].emit('mirror', 'mirrored message', mirrorNotifier);
         }));
       }
-      await Promise.all(mirroredPromises);
+      expect(await Promise.all(mirroredPromises)).toEqual(
+        expect.arrayContaining(['mirrored message', 'mirrored message', 'mirrored message'])
+      );
     });
 
     it('add then remove mirror listener', () => {
@@ -139,12 +139,11 @@ describe('player manager tests', () => {
       return mirroredPromise;
     });
 
-    it('multiple add then remove mirror listener, but finally added', () => {
+    it('multiple add then remove mirror listener, but finally added', async () => {
       // only tests a single clientsocket
-      let mirroredPromise = new Promise<void>((resolve, reject) => {
+      let mirroredPromise = new Promise<string>((resolve, reject) => {
         const mirrorNotifier = (message: string) => {
-          expect(message).toBe('mirrored message');
-          resolve();
+          resolve(message);
         }
         for (let i = 0; i < 20; i++) {
           room.addListenerToAll(mirrorListener);
@@ -153,7 +152,7 @@ describe('player manager tests', () => {
         room.addListenerToAll(mirrorListener);
         clientSockets[0].emit('mirror', 'mirrored message', mirrorNotifier);
       });
-      return mirroredPromise;
+      expect(await mirroredPromise).toBe('mirrored message');;
     });
 
     it('multiple room creates and mirror listener tests', () => {

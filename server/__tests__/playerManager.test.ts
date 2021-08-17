@@ -100,7 +100,7 @@ describe('player manager tests', () => {
       });
     });
 
-    it.only('remove first player get names doesnt include first player', () => {
+    it('remove first player get names doesnt include first player', () => {
       playerManager.removePlayer(clientSockets[0].id);
       clientSockets[0].close();
       clientSockets.shift();
@@ -128,18 +128,16 @@ describe('player manager tests', () => {
 
   describe('player listener management', () => {// listener function
     let testFn = () => (message: string) => io.emit('test2', message);
-    it('add listener to single player', (done) => {
-      // when client receives test2, check data message
-      clientSockets[0].on('test2', (message) => {
-        try {
-          expect(message).toBe('test message');
-          done();
-        } catch (err) { // since we're using done, have to catch the error and pass it to done
-          done(err);
-        }
-      });
+    it('add listener to single player', async () => {
       playerManager.addListener(clientSockets[0].id, 'test1', testFn);
-      clientSockets[0].emit('test1', 'test message');
+      // when client receives test2, check data message
+      let messagePromise = new Promise<string>((resolve, reject) => {
+        clientSockets[0].on('test2', (message) => {
+          resolve(message);
+        });
+        clientSockets[0].emit('test1', 'test message');
+      });
+      expect(await messagePromise).toBe('test message');
     });
 
     it('remove listener from single player', (done) => {
@@ -157,9 +155,7 @@ describe('player manager tests', () => {
     it('add listener to all', async () => {
       let receievedPromises = clientSockets.map((clientSocket) => {
         return new Promise<void>((resolve, reject) => {
-          clientSocket.on('all', () => {
-            resolve();
-          });
+          clientSocket.on('all', resolve);
         });
       });
       playerManager.addListenerToAll('all', (data) => () => io.emit('all'));
@@ -183,9 +179,7 @@ describe('player manager tests', () => {
     it('add and remove listeners to all multiple times', async () => {
       let receievedPromises = clientSockets.map((clientSocket) => {
         return new Promise<void>((resolve, reject) => {
-          clientSocket.on('all', () => {
-            resolve();
-          });
+          clientSocket.on('all', resolve);
         });
       });
       for (let i = 0; i < 10; i++) {
@@ -202,15 +196,15 @@ describe('player manager tests', () => {
       clientSockets.forEach((clientSocket) => {
         expect(clientSocket.connected).toBe(true);
       });
-      playerManager.close();
       let disconnectPromises = clientSockets.map((clientSocket) => {
         return new Promise<void>((resolve, reject) => {
-          clientSocket.on('all', () => {
+          clientSocket.on('disconnect', () => {
             resolve();
           });
         });
       });
-      Promise.all(disconnectPromises);
+      playerManager.close();
+      await Promise.all(disconnectPromises);
     });
   });
 });
