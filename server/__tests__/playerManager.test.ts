@@ -1,9 +1,8 @@
-import { createServer } from 'http';
-import { AddressInfo } from 'net';
 import { Server, Socket as ServerSocket } from 'socket.io';
 import Client, { Socket as ClientSocket } from 'socket.io-client';
-import { Player, PlayerManager } from "../src/socket/PlayerManager";
-import { createSocketPairs, createSocketServer } from './helpers';
+import { PlayerManager } from "../src/socket/PlayerManager";
+import { Player } from '../src/socket/player';
+import { createClientSockets, createSocketPairs, createSocketServer } from './helpers';
 
 describe('player manager tests', () => {
   const DONE_DELAY = 100;
@@ -75,21 +74,21 @@ describe('player manager tests', () => {
   });
 
   describe('adding and removing players', () => {
-    it('add new players get names returns new ids', (done) => {
-      // add playeres is called automatically when a client connects.
-      let newClientSocket = Client(`http://localhost:${port}`);
+    it('add new players get names returns new ids', async () => {
+      let newClientSocket = (await createClientSockets(port, 1))[0];
       clientSockets.push(newClientSocket);
-      newClientSocket.on('connect', () => {
-        let expectedIds = clientSockets.map((socket) => {
-          return socket.id;
-        });
-        try {
-          expect(playerManager.getIds()).toEqual(expect.arrayContaining(expectedIds));
-          done();
-        } catch (err) { // since we're using done, have to catch the error and pass it to done
-          done(err);
-        }
+      let expectedIds = clientSockets.map((socket) => {
+        return socket.id;
       });
+      expect(playerManager.getIds()).toEqual(expect.arrayContaining(expectedIds));
+    });
+
+    it('add same player multiple times throws error', async () => {
+      let [newClientSockets, newServerSockets] = (await createSocketPairs(io, port, 1));
+      clientSockets.push(newClientSockets[0]); // to let jest hooks cleanup the new socket
+      let newPlayer = new Player(newServerSockets[0], 'New Player');
+      playerManager.addPlayer(newPlayer);
+      expect(() => playerManager.addPlayer(newPlayer)).toThrowError();
     });
 
     it('remove first player get names doesnt include first player', () => {

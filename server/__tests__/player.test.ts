@@ -1,9 +1,7 @@
-import { createServer } from 'http';
-import { AddressInfo } from 'net';
 import { Server, Socket as ServerSocket } from 'socket.io';
-import Client, { Socket as ClientSocket } from 'socket.io-client';
-import { Player } from "../src/socket/PlayerManager";
-import { createClientSockets, createSocketPairs, createSocketServer } from './helpers';
+import { Socket as ClientSocket } from 'socket.io-client';
+import { Player } from "../src/socket/Player";
+import { createSocketPairs, createSocketServer } from './helpers';
 
 describe('player class testing', () => {
   let io: Server, serverSocket: ServerSocket, clientSocket: ClientSocket;

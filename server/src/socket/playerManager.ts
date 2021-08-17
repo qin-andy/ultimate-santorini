@@ -1,31 +1,19 @@
-import { Socket } from "socket.io";
-import { ListenerFactoryPlayer } from "../types/types";
-
-export class Player {
-  name: string;
-  socket: Socket;
-  id: string;
-
-  constructor(sock: Socket, name?: string) {
-    this.socket = sock;
-    this.name = sock.id;
-    this.id = sock.id;
-    if (name) this.name = name;
-  }
-}
+import { Player } from "./player";
 
 export class PlayerManager {
   players: Player[];
-  idMap: Map<string, Player>;
+  playerMap: Map<string, Player>;
 
   constructor() {
     this.players = [];
-    this.idMap = new Map<string, Player>();
+    this.playerMap = new Map<string, Player>();
   }
 
   addPlayer(player: Player): Player {
+    if (this.players.includes(player)) throw Error('Player already exists!');
     this.players.push(player);
-    this.idMap.set(player.id, player);
+
+    this.playerMap.set(player.id, player);
     player.socket.on('disconnect', () => () => {
       this.removePlayer(player.id);
     });
@@ -38,7 +26,7 @@ export class PlayerManager {
     this.players = this.players.filter((player) => {
       return player.id !== removedPlayer.id;
     });
-    this.idMap.delete(id);
+    this.playerMap.delete(id);
     removedPlayer.socket.removeAllListeners();
     removedPlayer.socket.disconnect();
     return removedPlayer;
@@ -61,7 +49,7 @@ export class PlayerManager {
   }
 
   getPlayerById(id: string): Player {
-    let player = this.idMap.get(id);
+    let player = this.playerMap.get(id);
     if (player) {
       return player;
     }
@@ -69,7 +57,7 @@ export class PlayerManager {
   }
 
   close(): void {
-    this.idMap.clear();
+    this.playerMap.clear();
     this.players.forEach((player => {
       player.socket.disconnect();
     }));
