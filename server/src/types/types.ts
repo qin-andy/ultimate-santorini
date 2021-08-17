@@ -1,4 +1,4 @@
-import { Player } from "../socket/playerManager";
+import { Player } from "../game/playerManager";
 import { Room } from "../socket/room";
 
 export interface ChatMessage {

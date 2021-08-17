@@ -1,7 +1,7 @@
 import { Server, Socket as ServerSocket } from 'socket.io';
 import Client, { Socket as ClientSocket } from 'socket.io-client';
-import { PlayerManager } from "../src/socket/PlayerManager";
-import { Player } from '../src/socket/player';
+import { PlayerManager } from "../src/game/PlayerManager";
+import { Player } from '../src/game/player';
 import { createClientSockets, createSocketPairs, createSocketServer } from './helpers';
 
 describe('player manager tests', () => {

@@ -1,6 +1,6 @@
 import { Server, Socket as ServerSocket } from 'socket.io';
 import { Socket as ClientSocket } from 'socket.io-client';
-import { Player } from "../src/socket/Player";
+import { Player } from "../src/game/Player";
 import { createSocketPairs, createSocketServer } from './helpers';
 
 describe('player class testing', () => {
