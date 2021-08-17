@@ -29,5 +29,5 @@ export interface ListenerFactoryRoom {
 }
 
 export interface ListenerFactoryPlayer {
-  (player?: Player): (data?: any) => void;
+  (player?: Player): (data?: any, notifierCallback?: Function) => void;
 }
