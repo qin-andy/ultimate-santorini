@@ -29,17 +29,23 @@ export class EventHandler {
       acknowledger(this.game.playerManager.getNames());
     }
 
-    const handleChangeName = (event: any) {
-      let player = this.game.playerManager.getPlayerById(event.socket.id);
-      player.name = event.name;
+    const handleChangeName = (event: any, acknowledger: Function) => {
+      let player = this.game.playerManager.getPlayerById(event.id);
+      player.name = event.payload;
+      acknowledger();
+    }
+
+    const handleMirror = (event: any, acknowledger: Function) => {
+      acknowledger(event);
     }
 
     this.eventMap.set('get player list', handleListPlayers);
-    this.eventMap.set('set player name', handleChangeName);
+    this.eventMap.set('update player name', handleChangeName);
+    this.eventMap.set('mirror', handleMirror);
   }
 
   handleEvent(event: any, acknowledger: Function) {
-    let handler = this.eventMap.get(event.event)
+    let handler = this.eventMap.get(event.name)
     if (handler) {
       handler(event, acknowledger);
     }

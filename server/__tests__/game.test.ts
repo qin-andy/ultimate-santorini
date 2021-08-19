@@ -19,6 +19,15 @@ describe('player manager tests', () => {
     [io, port] = await createSocketServer();
     clientSockets = [];
     serverSockets = [];
+    players = [];
+    io.on('connect', (serverSocket) => {
+      let newPlayer = new Player(serverSocket, 'Player ' + playerCount);
+      game.addPlayer(newPlayer);
+      players.push(newPlayer);
+      playerCount++;
+    });
+    game = new Game('Test Game');
+    playerCount = 1;
   });
 
   afterAll(() => {
@@ -29,54 +38,27 @@ describe('player manager tests', () => {
     if (global.gc) { global.gc() }
   });
 
-  afterEach(() => {
+  afterEach((done) => {
+    playerCount = 1;
     clientSockets.forEach((socket) => socket.close());
+    clientSockets = [];
+    players = [];
+    game.close();
+    setTimeout(done, IN_BETWEEN_DELAY);
   });
 
   describe('basic info', () => {
-    beforeAll(() => {
-      game = new Game('Test Game');
-      playerCount = 1;
-    });
-
-    afterEach((done) => {
-      playerCount = 1;
-      clientSockets.forEach((socket) => socket.close());
-      clientSockets = [];
-      players = [];
-      io.removeAllListeners();
-      setTimeout(done, IN_BETWEEN_DELAY);
-      game.close();
-    });
-
-    afterAll(() => {
-      io.close();
-    });
-
     it('name returns right name', async () => {
       game = new Game('Test Game 1');
       expect(game.name).toBe('Test Game 1');
     });
 
     it('after add player, game playerManager has correct info 1', async () => {
-      game = new Game('Test Game 1');
-      io.on('connect', (serverSocket) => {
-        let newPlayer = new Player(serverSocket, 'Player ' + playerCount);
-        game.addPlayer(newPlayer);
-        players.push(newPlayer);
-        playerCount++;
-      });
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 3);
       expect(game.playerManager.getCount()).toBe(3);
     });
 
     it('after add player, game playerManager has correct info 2', async () => {
-      io.on('connect', (serverSocket) => {
-        let newPlayer = new Player(serverSocket, 'Player ' + playerCount);
-        game.addPlayer(newPlayer);
-        players.push(newPlayer);
-        playerCount++;
-      });
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 3);
       let expectedPlayerNames = players.map(player => {
         return player.name;
@@ -85,12 +67,6 @@ describe('player manager tests', () => {
     });
 
     it('after add add remove player, game playerManager has correct info 2', async () => {
-      io.on('connect', (serverSocket) => {
-        let newPlayer = new Player(serverSocket, 'Player ' + playerCount);
-        game.addPlayer(newPlayer);
-        players.push(newPlayer);
-        playerCount++;
-      });
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 3);
       game.removePlayer(players[0]);
       game.removePlayer(players[1]);
@@ -100,8 +76,17 @@ describe('player manager tests', () => {
   });
 
   describe('event handling', () => {
-    it.todo('event handler correctly attached');
+    it.only('event handler correctly attached', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+      const handleMirror = (event: any, acknowledger: Function) => {
+        acknowledger(event.payload);
+      }
+      game.eventHandler.eventMap.set('mirror test', handleMirror);
+      let mirrorPromise = new Promise<string>((resolve) => {
+        let payload = 'test message';
+        clientSockets[0].emit('game action', 'mirror test', payload, resolve);
+      });
+      expect(await mirrorPromise).toBe('test message');
+    });
   });
-
-
 });

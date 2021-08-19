@@ -17,7 +17,14 @@ export class Game {
   }
 
   addPlayer(player: Player) {
-    player.socket.on('game action', this.eventHandler.handleEvent);
+    player.socket.on('game action', (name: any, payload: any, acknowledger: Function) => {
+      let event = {
+        name: name,
+        payload: payload,
+        id: player.socket.id
+      };
+      this.eventHandler.handleEvent(event, acknowledger);
+    });
     this.playerManager.addPlayer(player);
   }
 
