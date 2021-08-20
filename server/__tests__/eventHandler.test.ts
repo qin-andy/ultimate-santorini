@@ -21,7 +21,7 @@ describe('EventHandler tests', () => {
     serverSockets = [];
     players = [];
 
-    game = new Game('Test Game');
+    game = new Game('Test Game', io);
     playerCount = 1;
     io.on('connect', (serverSocket) => {
       let newPlayer = new Player(serverSocket, 'Player ' + playerCount);
@@ -85,7 +85,4 @@ describe('EventHandler tests', () => {
       expect(players[0].name).toBe('Large Bobby');
     });
   });
-
-
-
 });

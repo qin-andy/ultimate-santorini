@@ -26,7 +26,7 @@ describe('player manager tests', () => {
       players.push(newPlayer);
       playerCount++;
     });
-    game = new Game('Test Game');
+    game = new Game('Test Game', io);
     playerCount = 1;
   });
 
@@ -49,7 +49,7 @@ describe('player manager tests', () => {
 
   describe('basic info', () => {
     it('name returns right name', async () => {
-      game = new Game('Test Game 1');
+      game = new Game('Test Game 1', io);
       expect(game.name).toBe('Test Game 1');
     });
 
@@ -76,7 +76,7 @@ describe('player manager tests', () => {
   });
 
   describe('event handling', () => {
-    it.only('event handler correctly attached', async () => {
+    it('event handler correctly attached', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
       const handleMirror = (event: any, acknowledger: Function) => {
         acknowledger(event.payload);
@@ -87,6 +87,140 @@ describe('player manager tests', () => {
         clientSockets[0].emit('game action', 'mirror test', payload, resolve);
       });
       expect(await mirrorPromise).toBe('test message');
+    });
+  });
+
+  describe('tic tac toe tests', () => {
+    beforeEach(() => {
+      game = new Game('Tic Tac Toe Game', io);
+    });
+
+    it('game cannot start without 2 players', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+      expect(game.start()).toBe(false);
+    });
+
+    it('game start with 2 players', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      expect(game.start()).toBe(true);
+    });
+
+    it('multiple marking board directly', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      game.start();
+      game.mark(clientSockets[0].id, 1, 1);
+      game.mark(clientSockets[1].id, 0, 1);
+      game.mark(clientSockets[0].id, 0, 2);
+      game.mark(clientSockets[1].id, 1, 2);
+      let expectedBoard = [
+        ['*', '*', '*'],
+        ['x', 'o', '*'],
+        ['o', 'x', '*']
+      ];
+      console.log(game.board);
+      expect(game.board).toStrictEqual(expectedBoard);
+    });
+
+    let boardPromiseFactory = async (i: number) => { // helper function for game responses
+      return new Promise<string[][]>((resolve, reject) => {
+        clientSockets[i].once('game update', (err: string | null, response: string[][] | null) => {
+          if (response) {
+            console.log('promise resolved ' + i);
+            setTimeout(() => { // THIS OR SLEEP DELAY: WHY DO I NEED THIS? why doesn't the code execute in order?
+              resolve(response)
+            }, 0);
+          } else {
+            reject(err);
+          }
+        });
+      });
+    }
+
+    function sleep(time: number) {
+      return new Promise<void>(resolve => {
+        setTimeout(resolve, time);
+      })
+    }
+
+    it('mark board after game start updates board', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      game.start();
+      let expectedBoard = [
+        ['*', '*', '*'],
+        ['*', 'o', '*'],
+        ['*', '*', '*']
+      ];
+      let boardPromise = boardPromiseFactory(0);
+      clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
+      let board = await boardPromise;
+      expect(board).toStrictEqual(expectedBoard);
+    });
+
+    it('mark board switches turns', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      game.start();
+      let boardPromise = boardPromiseFactory(0);
+      clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
+      let board = await boardPromise;
+      expect(game.turn).toBe('x');
+    });
+
+    it.only('multiple board marks through events', async () => {
+
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      game.start();
+      let expectedBoard = [
+        ['*', '*', '*'],
+        ['x', 'o', '*'],
+        ['o', 'x', '*']
+      ];
+      const SLEEP_DELAY = 0;
+      let boardPromise = boardPromiseFactory(0);
+      console.log('sending action 1');
+      clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
+      await sleep(SLEEP_DELAY); // Doesn't work without these sleeps: something to do with the event lops?
+      // await boardPromise;
+
+      boardPromise = boardPromiseFactory(1);
+      console.log('sending action 2');
+      clientSockets[1].emit('game action', 'tictactoe mark', { x: 0, y: 1 });
+      // await sleep(SLEEP_DELAY);
+      await boardPromise;
+
+      boardPromise = boardPromiseFactory(0);
+      console.log('sending action 3');
+      clientSockets[0].emit('game action', 'tictactoe mark', { x: 0, y: 2 });
+      // await sleep(SLEEP_DELAY);
+      await boardPromise;
+
+      boardPromise = boardPromiseFactory(1);
+      console.log('sending action 4');
+      clientSockets[1].emit('game action', 'tictactoe mark', { x: 1, y: 2 });
+      // await sleep(SLEEP_DELAY);
+      let board = await boardPromise;
+      expect(board).toStrictEqual(expectedBoard);
+    });
+
+    it('mark board when its not your turn gives error', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      game.start();
+
+      let boardPromise = boardPromiseFactory(1);
+      clientSockets[1].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
+      expect(boardPromise).rejects.toBeTruthy(); // is there a way to read the error?
+    });
+
+    it('mark already occupied square gives error', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      game.start();
+
+      let boardPromise = boardPromiseFactory(0);
+      clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
+      await boardPromise;
+
+      boardPromise = boardPromiseFactory(1);
+      clientSockets[1].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
+      expect(boardPromise).rejects.toBeTruthy(); // is there a way to read the error?
     });
   });
 });
