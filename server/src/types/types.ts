@@ -5,5 +5,6 @@ import { Player } from "../game/player";
 export interface GameEvent {
   name: string,
   payload: any,
-  id: string
+  id: string,
+  acknowledger: Function
 }

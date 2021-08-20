@@ -3,10 +3,15 @@ import { GameEvent } from '../types/types';
 export class EventHandler {
   game: Game;
   eventMap: Map<string, Function>
+  eventQueue: GameEvent[];
+  eventLoopTimer: ReturnType<typeof setInterval>;
+
   constructor(game: Game) {
+    this.eventQueue = [];
     this.game = game;
     this.eventMap = new Map<string, Function>();
     this.initializeHandlers();
+    this.eventLoopTimer = this.startEventLoop();
   }
 
   initializeHandlers() {
@@ -28,17 +33,17 @@ export class EventHandler {
         4.
     */
     const handleListPlayers = (event: any, acknowledger: Function) => {
-      acknowledger(this.game.playerManager.getNames());
+      event.acknowledger(this.game.playerManager.getNames());
     }
 
     const handleChangeName = (event: any, acknowledger: Function) => {
       let player = this.game.playerManager.getPlayerById(event.id);
       player.name = event.payload;
-      acknowledger();
+      event.acknowledger();
     }
 
-    const handleMirror = (event: any, acknowledger: Function) => {
-      acknowledger(event);
+    const handleMirror = (event: any) => {
+      event.acknowledger(event);
     }
 
     this.eventMap.set('get player list', handleListPlayers);
@@ -46,7 +51,7 @@ export class EventHandler {
     this.eventMap.set('mirror', handleMirror);
 
     // tic tac toe handlers
-    const handleMark = async (event: GameEvent, acknowledger: Function)  => {
+    const handleMark = (event: GameEvent)  => {
       let [error, board] = this.game.mark(event.id, event.payload.x, event.payload.y);
       if (error) {
         console.log('sending message')
@@ -59,10 +64,30 @@ export class EventHandler {
     this.eventMap.set('tictactoe mark', handleMark);
   }
 
-  handleEvent(event: any, acknowledger: Function) {
+  startEventLoop() {
+    return setInterval(() => {
+      if (this.eventQueue.length >= 1) {
+        let event = this.eventQueue[0];
+        this.eventQueue.shift();
+        this.handleEvent(event);
+      }
+    }, 100);
+  }
+
+  queueEvent(event: GameEvent) {
+    //console.log(event);
+    this.eventQueue.push(event);
+  }
+
+  handleEvent(event: any) {
     let handler = this.eventMap.get(event.name)
     if (handler) {
-      handler(event, acknowledger);
+      handler(event);
     }
+  }
+
+  close() {
+    clearInterval(this.eventLoopTimer);
+    this.eventQueue = [];
   }
 }

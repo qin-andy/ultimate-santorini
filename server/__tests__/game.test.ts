@@ -2,6 +2,7 @@ import { Server, Socket as ServerSocket } from 'socket.io';
 import { Socket as ClientSocket } from 'socket.io-client';
 import { Game } from '../src/game/game';
 import { Player } from '../src/game/player';
+import { GameEvent } from '../src/types/types';
 import { createClientSockets, createSocketPairs, createSocketServer } from './helpers';
 
 describe('player manager tests', () => {
@@ -38,6 +39,11 @@ describe('player manager tests', () => {
     if (global.gc) { global.gc() }
   });
 
+  beforeEach(() => {
+    game.close();
+    game = new Game('Test Game 1', io);
+  })
+
   afterEach((done) => {
     playerCount = 1;
     clientSockets.forEach((socket) => socket.close());
@@ -49,7 +55,6 @@ describe('player manager tests', () => {
 
   describe('basic info', () => {
     it('name returns right name', async () => {
-      game = new Game('Test Game 1', io);
       expect(game.name).toBe('Test Game 1');
     });
 
@@ -78,8 +83,8 @@ describe('player manager tests', () => {
   describe('event handling', () => {
     it('event handler correctly attached', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
-      const handleMirror = (event: any, acknowledger: Function) => {
-        acknowledger(event.payload);
+      const handleMirror = (event: GameEvent) => {
+        event.acknowledger(event.payload);
       }
       game.eventHandler.eventMap.set('mirror test', handleMirror);
       let mirrorPromise = new Promise<string>((resolve) => {
@@ -92,6 +97,7 @@ describe('player manager tests', () => {
 
   describe('tic tac toe tests', () => {
     beforeEach(() => {
+      game.close();
       game = new Game('Tic Tac Toe Game', io);
     });
 
@@ -117,7 +123,6 @@ describe('player manager tests', () => {
         ['x', 'o', '*'],
         ['o', 'x', '*']
       ];
-      console.log(game.board);
       expect(game.board).toStrictEqual(expectedBoard);
     });
 
@@ -126,9 +131,7 @@ describe('player manager tests', () => {
         clientSockets[i].once('game update', (err: string | null, response: string[][] | null) => {
           if (response) {
             console.log('promise resolved ' + i);
-            setTimeout(() => { // THIS OR SLEEP DELAY: WHY DO I NEED THIS? why doesn't the code execute in order?
-              resolve(response)
-            }, 0);
+            resolve(response)
           } else {
             reject(err);
           }
@@ -166,7 +169,6 @@ describe('player manager tests', () => {
     });
 
     it.only('multiple board marks through events', async () => {
-
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
       game.start();
       let expectedBoard = [
@@ -174,30 +176,31 @@ describe('player manager tests', () => {
         ['x', 'o', '*'],
         ['o', 'x', '*']
       ];
-      const SLEEP_DELAY = 0;
+      const SLEEP_DELAY = 100;
       let boardPromise = boardPromiseFactory(0);
       console.log('sending action 1');
       clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
       await sleep(SLEEP_DELAY); // Doesn't work without these sleeps: something to do with the event lops?
-      // await boardPromise;
+      await boardPromise;
 
       boardPromise = boardPromiseFactory(1);
       console.log('sending action 2');
       clientSockets[1].emit('game action', 'tictactoe mark', { x: 0, y: 1 });
-      // await sleep(SLEEP_DELAY);
+      await sleep(SLEEP_DELAY);
       await boardPromise;
 
       boardPromise = boardPromiseFactory(0);
       console.log('sending action 3');
       clientSockets[0].emit('game action', 'tictactoe mark', { x: 0, y: 2 });
-      // await sleep(SLEEP_DELAY);
+      await sleep(SLEEP_DELAY);
       await boardPromise;
 
       boardPromise = boardPromiseFactory(1);
       console.log('sending action 4');
       clientSockets[1].emit('game action', 'tictactoe mark', { x: 1, y: 2 });
-      // await sleep(SLEEP_DELAY);
+      await sleep(SLEEP_DELAY);
       let board = await boardPromise;
+      console.log(board);
       expect(board).toStrictEqual(expectedBoard);
     });
 

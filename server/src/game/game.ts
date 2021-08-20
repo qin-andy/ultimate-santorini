@@ -41,9 +41,10 @@ export class Game {
       let event: GameEvent = {
         name: name,
         payload: payload,
-        id: player.socket.id
+        id: player.socket.id,
+        acknowledger: acknowledger
       };
-      this.eventHandler.handleEvent(event, acknowledger);
+      this.eventHandler.queueEvent(event);
     });
     this.playerManager.addPlayer(player);
   }
@@ -54,6 +55,7 @@ export class Game {
 
   close() {
     this.playerManager.close();
+    this.eventHandler.close();
   }
 
   // tic tac toe logic

@@ -32,6 +32,7 @@ describe('EventHandler tests', () => {
   });
 
   afterAll(() => {
+    game.close();
     io.close();
     clientSockets.forEach((clientSocket) => {
       clientSocket.close();
@@ -39,8 +40,9 @@ describe('EventHandler tests', () => {
     if (global.gc) { global.gc() }
   });
 
-  afterEach(() => {
-    clientSockets.forEach((socket) => socket.close());
+  beforeEach(() => {
+    game.close();
+    game = new Game('Test Game', io);
   });
 
   afterEach((done) => {
@@ -50,10 +52,6 @@ describe('EventHandler tests', () => {
     players = [];
     game.close();
     setTimeout(done, IN_BETWEEN_DELAY);
-  });
-
-  afterAll(() => {
-    io.close();
   });
 
   describe('EventHandler handles events', () => {
