@@ -226,4 +226,66 @@ describe('player manager tests', () => {
       expect(boardPromise).rejects.toBeTruthy(); // is there a way to read the error?
     });
   });
+
+  describe.only('board win tests', () => {
+    beforeEach(() => {
+      game.close();
+      game = new Game('Tic Tac Toe Game', io);
+    });
+
+    it('board win test 1, diagonal', () => {
+      game.board = [
+        ['o', 'x', 'o'],
+        ['x', 'o', 'x'],
+        ['o', 'x', 'o']
+      ];
+      expect(game.checkWin(0, 0)).toBe(true);
+      expect(game.checkWin(1, 1)).toBe(true);
+      expect(game.checkWin(2, 2)).toBe(true);
+
+      expect(game.checkWin(0, 2)).toBe(true);
+      expect(game.checkWin(2, 0)).toBe(true);
+
+      expect(game.checkWin(0, 1)).toBe(false);
+      expect(game.checkWin(1, 2)).toBe(false);
+    });
+
+    it('board win test 2, rows', () => {
+      game.board = [
+        ['o', 'o', 'o'],
+        ['x', 'x', 'x'],
+        ['o', 'o', 'o']
+      ];
+      expect(game.checkWin(0, 0)).toBe(true);
+      expect(game.checkWin(1, 0)).toBe(true);
+      expect(game.checkWin(2, 0)).toBe(true);
+
+      expect(game.checkWin(0, 1)).toBe(true);
+      expect(game.checkWin(1, 1)).toBe(true);
+      expect(game.checkWin(2, 1)).toBe(true);
+
+      expect(game.checkWin(0, 2)).toBe(true);
+      expect(game.checkWin(1, 2)).toBe(true);
+      expect(game.checkWin(2, 2)).toBe(true);
+    });
+
+    it('board win test 3, columns', () => {
+      game.board = [
+        ['o', 'x', 'o'],
+        ['o', 'x', 'o'],
+        ['o', 'x', 'o']
+      ];
+      expect(game.checkWin(0, 0)).toBe(true);
+      expect(game.checkWin(0, 1)).toBe(true);
+      expect(game.checkWin(0, 2)).toBe(true);
+
+      expect(game.checkWin(1, 0)).toBe(true);
+      expect(game.checkWin(1, 1)).toBe(true);
+      expect(game.checkWin(1, 2)).toBe(true);
+
+      expect(game.checkWin(2, 0)).toBe(true);
+      expect(game.checkWin(2, 1)).toBe(true);
+      expect(game.checkWin(2, 2)).toBe(true);
+    });
+  });
 });
