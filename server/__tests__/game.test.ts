@@ -168,7 +168,7 @@ describe('player manager tests', () => {
       expect(game.turn).toBe('x');
     });
 
-    it.only('multiple board marks through events', async () => {
+    it('multiple board marks through events', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
       game.start();
       let expectedBoard = [
@@ -180,7 +180,7 @@ describe('player manager tests', () => {
       let boardPromise = boardPromiseFactory(0);
       console.log('sending action 1');
       clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
-      await sleep(SLEEP_DELAY); // Doesn't work without these sleeps: something to do with the event lops?
+      await sleep(SLEEP_DELAY);
       await boardPromise;
 
       boardPromise = boardPromiseFactory(1);

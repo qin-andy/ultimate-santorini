@@ -4,14 +4,14 @@ export class EventHandler {
   game: Game;
   eventMap: Map<string, Function>
   eventQueue: GameEvent[];
-  eventLoopTimer: ReturnType<typeof setInterval>;
+  // eventLoopTimer: ReturnType<typeof setInterval>;
 
   constructor(game: Game) {
     this.eventQueue = [];
     this.game = game;
     this.eventMap = new Map<string, Function>();
     this.initializeHandlers();
-    this.eventLoopTimer = this.startEventLoop();
+    // this.eventLoopTimer = this.startEventLoop();
   }
 
   initializeHandlers() {
@@ -64,20 +64,19 @@ export class EventHandler {
     this.eventMap.set('tictactoe mark', handleMark);
   }
 
-  startEventLoop() {
-    return setInterval(() => {
-      if (this.eventQueue.length >= 1) {
-        let event = this.eventQueue[0];
-        this.eventQueue.shift();
-        this.handleEvent(event);
-      }
-    }, 100);
-  }
+  // startEventLoop() {
+  //   return setInterval(() => {
+  //     if (this.eventQueue.length >= 1) {
+  //       let event = this.eventQueue[0];
+  //       this.eventQueue.shift();
+  //       this.handleEvent(event);
+  //     }
+  //   }, 100);
+  // }
 
-  queueEvent(event: GameEvent) {
-    //console.log(event);
-    this.eventQueue.push(event);
-  }
+  // queueEvent(event: GameEvent) {
+  //   this.eventQueue.push(event);
+  // }
 
   handleEvent(event: any) {
     let handler = this.eventMap.get(event.name)
@@ -87,7 +86,7 @@ export class EventHandler {
   }
 
   close() {
-    clearInterval(this.eventLoopTimer);
-    this.eventQueue = [];
+    // clearInterval(this.eventLoopTimer);
+    // this.eventQueue = [];
   }
 }

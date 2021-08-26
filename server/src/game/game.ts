@@ -44,7 +44,7 @@ export class Game {
         id: player.socket.id,
         acknowledger: acknowledger
       };
-      this.eventHandler.queueEvent(event);
+      this.eventHandler.handleEvent(event);
     });
     this.playerManager.addPlayer(player);
   }
