@@ -113,9 +113,14 @@ describe('player manager tests', () => {
           expect(game.start()).toBe(true);
         });
 
+        it('game cannot start with 3 players', async () => {
+          [clientSockets, serverSockets] = await createSocketPairs(io, port, 3);
+          expect(game.start()).toBe(false);
+        });
+
         it('game start players are assigned respective turns', async () => {
           [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
-          console.log(game.start());
+          game.start();
           expect(game.teamMap.get(clientSockets[0].id)).toBe('o');
           expect(game.teamMap.get(clientSockets[1].id)).toBe('x');
         });
@@ -179,7 +184,7 @@ describe('player manager tests', () => {
       });
 
       describe('board marking', () => {
-        it('single mark 1', async () => {
+        it('single mark updates board', async () => {
           [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
           game.start();
           game.mark(clientSockets[0].id, 1, 1);
@@ -189,6 +194,20 @@ describe('player manager tests', () => {
             ['*', '*', '*']
           ];
           expect(game.board).toStrictEqual(expectedBoard);
+        });
+
+        it('single mark GameUpdate has correct contents', async () => {
+          [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+          game.start();
+          let [error, update] = game.mark(clientSockets[0].id, 1, 1);
+          let expectedBoard = [
+            ['*', '*', '*'],
+            ['*', 'o', '*'],
+            ['*', '*', '*']
+          ];
+          expect(error).toBe(null);
+          expect(update?.payload).toStrictEqual(expectedBoard);
+          expect(update?.type).toBe('mark');
         });
 
         it('multiple marks', async () => {
@@ -217,8 +236,18 @@ describe('player manager tests', () => {
           [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
           game.start();
           let [error, update] = game.mark(clientSockets[1].id, 1, 1);
-          expect(error).toBeTruthy();
           expect(update).toBe(null);
+          expect(error?.type).toBe('turn');
+          expect(error?.payload).toBe('o');
+        });
+
+        it('mark occupied square gives error', async () => {
+          [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+          game.start();
+          game.mark(clientSockets[0].id, 1, 1)
+          let [error, update] = game.mark(clientSockets[1].id, 1, 1);
+          expect(update).toBe(null);
+          expect(error?.type).toBe('occupied');
         });
 
         it('mark board winning mark wins game o', async () => {
@@ -231,9 +260,8 @@ describe('player manager tests', () => {
           ];
           let [error, update] = game.mark(clientSockets[0].id, 2, 0);
           expect(error).toBe(null);
-
-          expect(update?.code).toBe(2);
-          expect(update?.payload).toBe('o has won!');
+          expect(update?.type).toBe('win');
+          expect(update?.payload).toBe('o');
         });
 
         it('mark board winning mark wins game x', async () => {
@@ -247,9 +275,8 @@ describe('player manager tests', () => {
           game.turn = 'x';
           let [error, update] = game.mark(clientSockets[1].id, 0, 0);
           expect(error).toBe(null);
-
-          expect(update?.code).toBe(2);
-          expect(update?.payload).toBe('x has won!');
+          expect(update?.type).toBe('win');
+          expect(update?.payload).toBe('x');
         });
       });
     });
@@ -270,10 +297,10 @@ describe('player manager tests', () => {
       let boardPromiseFactory = async (i: number) => { // helper function for game responses
         return new Promise<string[][]>(async (resolve, reject) => {
           let update = await updatePromiseFactory(i);
-          if (update.code = 1) {
+          if (update.type === 'mark') {
             resolve(update.payload);
           } else {
-            reject(update.payload)
+            reject(update.payload);
           }
         });
       }
@@ -339,7 +366,7 @@ describe('player manager tests', () => {
         clientSockets[1].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
         expect(boardPromise).rejects.toBeTruthy(); // is there a way to read the error?
       });
-    })
+    });
   });
 
 

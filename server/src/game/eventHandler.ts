@@ -51,7 +51,7 @@ export class EventHandler {
     this.eventMap.set('mirror', handleMirror);
 
     // tic tac toe handlers
-    const handleMark = (event: GameEvent)  => {
+    const handleMark = (event: GameEvent) => {
       let [error, update] = this.game.mark(event.id, event.payload.x, event.payload.y);
       if (error) {
         this.game.io.to(this.game.roomId).emit('game update', error, null);
@@ -69,5 +69,5 @@ export class EventHandler {
     }
   }
 
-  close() { // TODO }
+  close() { /* TODO */ }
 }

@@ -3,7 +3,7 @@ import { PlayerManager } from "./playerManager";
 import { nanoid } from "nanoid";
 import { Player } from "./player";
 import { EventHandler } from "./eventHandler";
-import { GameEvent, GameUpdate } from '../types/types';
+import { GameEvent, GameUpdate, GameError } from '../types/types';
 
 export class Game {
   playerManager: PlayerManager;
@@ -11,6 +11,7 @@ export class Game {
   name: string;
   roomId: string;
   io: Server;
+  running: boolean;
 
   // tic tac toe game state
   turn: string;
@@ -23,6 +24,7 @@ export class Game {
     this.eventHandler = new EventHandler(this);
     this.roomId = nanoid();
     this.io = io;
+    this.running = false;
 
     this.turn = '*';
     this.teamMap = new Map<string, string>(); // id to team
@@ -52,12 +54,25 @@ export class Game {
   }
 
   close() {
+    // Managers
     this.playerManager.close();
     this.eventHandler.close();
+
+    // Tic Tac Toe
+    this.running = false;
+    this.turn = '*';
+    this.teamMap = new Map<string, string>();
+    this.board = [
+      ['*', '*', '*'],
+      ['*', '*', '*'],
+      ['*', '*', '*']
+    ];
   }
 
   // tic tac toe logic
   start() {
+    // assigns teams
+    // returns true if started, false if not
     if (this.playerManager.getCount() === 2) {
       this.teamMap.set(this.playerManager.players[0].id, 'o');
       this.teamMap.set(this.playerManager.players[1].id, 'x');
@@ -67,25 +82,41 @@ export class Game {
     return false;
   }
 
-  mark(id: string, x: number, y: number): [string | null, GameUpdate | null] {
-    if (this.teamMap.get(id) === this.turn) {
-      if (this.board[y][x] === '*') {
-        this.board[y][x] = this.turn;
-        this.turn = this.teamMap.get(id) === 'o' ? 'x' : 'o';
-        let update: GameUpdate = {
-          payload: this.board,
-          code: 1
-        }
-        // winner
-        if (this.checkWin(x, y)) {
-          update.payload = (this.board[y][x] + ' has won!');
-          update.code = 2;
-        }
-        return [null, update];
+  mark(id: string, x: number, y: number): [GameError | null, GameUpdate | null] {
+    // It must be the player's turn to mark
+    if (this.teamMap.get(id) !== this.turn) {
+      let error: GameError = {
+        payload: this.turn,
+        type: 'turn',
+        message: 'Cannot mark for ' + this.teamMap.get(id) + ': It is ' + this.turn + '\'s turn!'
       }
-      return ['Square is occupied!', null];
+      return [error, null];
     }
-    return ['It is ' + this.turn + '\'s turn!', null]
+
+    // Space must be empty
+    if (this.board[y][x] !== '*') {
+      let error: GameError = {
+        payload: null,
+        type: 'occupied',
+        message: x + ', ' + y + ': Square is occupied!'
+      }
+      return [error, null];
+    }
+
+    this.board[y][x] = this.turn;
+    this.turn = this.teamMap.get(id) === 'o' ? 'x' : 'o';
+    let update: GameUpdate = {
+      payload: this.board,
+      type: 'mark',
+      message: 'player marked, now it is ' + this.turn + '\'s turn'
+    }
+    // winner
+    if (this.checkWin(x, y)) {
+      update.message = (this.board[y][x] + ' has won!');
+      update.type = 'win';
+      update.payload = this.board[y][x];
+    }
+    return [null, update];
   }
 
   checkWin(x: number, y: number): boolean {

@@ -11,12 +11,12 @@ export interface GameEvent {
 
 export interface GameUpdate {
   payload: any,
-  code: number
+  type: string,
+  message: string
 }
 
-export interface Error {
+export interface GameError {
   payload: any,
-  code: number,
-  name: string,
+  type: string,
   message: string
 }
