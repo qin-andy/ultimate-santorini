@@ -52,31 +52,15 @@ export class EventHandler {
 
     // tic tac toe handlers
     const handleMark = (event: GameEvent)  => {
-      let [error, board] = this.game.mark(event.id, event.payload.x, event.payload.y);
+      let [error, update] = this.game.mark(event.id, event.payload.x, event.payload.y);
       if (error) {
-        console.log('sending message')
         this.game.io.to(this.game.roomId).emit('game update', error, null);
       } else {
-        console.log('sending message')
-        this.game.io.to(this.game.roomId).emit('game update', null, board);
+        this.game.io.to(this.game.roomId).emit('game update', null, update);
       }
     }
     this.eventMap.set('tictactoe mark', handleMark);
   }
-
-  // startEventLoop() {
-  //   return setInterval(() => {
-  //     if (this.eventQueue.length >= 1) {
-  //       let event = this.eventQueue[0];
-  //       this.eventQueue.shift();
-  //       this.handleEvent(event);
-  //     }
-  //   }, 100);
-  // }
-
-  // queueEvent(event: GameEvent) {
-  //   this.eventQueue.push(event);
-  // }
 
   handleEvent(event: any) {
     let handler = this.eventMap.get(event.name)
@@ -85,8 +69,5 @@ export class EventHandler {
     }
   }
 
-  close() {
-    // clearInterval(this.eventLoopTimer);
-    // this.eventQueue = [];
-  }
+  close() { // TODO }
 }

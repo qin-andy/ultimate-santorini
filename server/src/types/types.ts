@@ -8,3 +8,15 @@ export interface GameEvent {
   id: string,
   acknowledger: Function
 }
+
+export interface GameUpdate {
+  payload: any,
+  code: number
+}
+
+export interface Error {
+  payload: any,
+  code: number,
+  name: string,
+  message: string
+}

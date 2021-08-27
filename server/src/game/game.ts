@@ -3,7 +3,7 @@ import { PlayerManager } from "./playerManager";
 import { nanoid } from "nanoid";
 import { Player } from "./player";
 import { EventHandler } from "./eventHandler";
-import { GameEvent } from '../types/types';
+import { GameEvent, GameUpdate } from '../types/types';
 
 export class Game {
   playerManager: PlayerManager;
@@ -18,16 +18,14 @@ export class Game {
   teamMap: Map<string, string>; // id to team
 
   constructor(name: string, io: Server) {
-    // manageers
     this.name = name;
     this.playerManager = new PlayerManager();
     this.eventHandler = new EventHandler(this);
     this.roomId = nanoid();
     this.io = io;
 
-    // game state
     this.turn = '*';
-    this.teamMap = new Map<string, string>();
+    this.teamMap = new Map<string, string>(); // id to team
     this.board = [ // TODO : switch to 1d array?
       ['*', '*', '*'],
       ['*', '*', '*'],
@@ -69,15 +67,23 @@ export class Game {
     return false;
   }
 
-  mark(id: string, x: number, y: number): [string | null, string[][] | null] {
+  mark(id: string, x: number, y: number): [string | null, GameUpdate | null] {
     if (this.teamMap.get(id) === this.turn) {
       if (this.board[y][x] === '*') {
-        console.log('setting board at ' + x + ',' + y);
         this.board[y][x] = this.turn;
         this.turn = this.teamMap.get(id) === 'o' ? 'x' : 'o';
-        return [null, this.board];
+        let update: GameUpdate = {
+          payload: this.board,
+          code: 1
+        }
+        // winner
+        if (this.checkWin(x, y)) {
+          update.payload = (this.board[y][x] + ' has won!');
+          update.code = 2;
+        }
+        return [null, update];
       }
-      return ['Square is occupied!', null]; // todo: error handling on this?
+      return ['Square is occupied!', null];
     }
     return ['It is ' + this.turn + '\'s turn!', null]
   }
