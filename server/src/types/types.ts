@@ -3,7 +3,7 @@ import { Game } from "../game/game";
 import { Player } from "../game/player";
 
 export interface GameEvent {
-  name: string,
+  type: string,
   payload: any,
   id: string,
   acknowledger: Function

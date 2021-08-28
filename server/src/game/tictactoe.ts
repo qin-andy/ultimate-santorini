@@ -10,7 +10,7 @@ export class TicTacToeGame extends Game {
     super(name, io);
 
     this.turn = '*';
-    this.board = [ // TODO : switch to 1d array?
+    this.board = [
       ['*', '*', '*'],
       ['*', '*', '*'],
       ['*', '*', '*']
@@ -32,11 +32,13 @@ export class TicTacToeGame extends Game {
     this.eventHandlerMap.set('tictactoe mark', handleMark);
   }
 
+  handleEvent(event: GameEvent) {
+    super.handleEvent(event); // TODO: conditional logic? don't handle events?
+  }
+
   close() {
     super.close();
-    this.running = false;
     this.turn = '*';
-    this.teamMap = new Map<string, string>();
     this.board = [
       ['*', '*', '*'],
       ['*', '*', '*'],
@@ -46,12 +48,11 @@ export class TicTacToeGame extends Game {
 
   // tic tac toe logic
   start() {
-    // assigns teams
-    // returns true if started, false if not
     if (this.playerManager.getCount() === 2) {
       this.teamMap.set(this.playerManager.players[0].id, 'o');
       this.teamMap.set(this.playerManager.players[1].id, 'x');
       this.turn = 'o';
+      this.running = true;
       return true;
     }
     return false;
@@ -95,30 +96,10 @@ export class TicTacToeGame extends Game {
   }
 
   checkWin(x: number, y: number): boolean {
-    /*
-      idea: check diagonal left, check diagonal right, check column, chcek row
-        check row/column: iterate from bottom to top and count consecutives. if consectuveis = 3, win
-        check diagonal left/right:
-          Get tot he topmost diagonal entry in either left or right
-            left: find the distnace to travel in diagonal left
-              thedistance able to travel is the minimum distance from either of the edges
-                determined by the minimum of x and y ( distance from x and y axis)
-              to travel in that direction, subtract that distance from both x and y coords
-            right:
-              distnace to the right edge is determined by xMax - x
-              find the minimum of either to xedge right or y axis
-              to travel in that direction, add that distance to x but subtrac t it from y
-            note for large boards, might wanna limit max distance to a certain valueto prevent searching entire board
-            (unecessary array accesses)
-            , but adds code complexity
-          traverse in that direction down and count consectutives
-          when the bottom edges is reached
-    */
-
     //info
     let boardX = 2; // index, not length!
     let boardY = 2;
-    let player = this.board[y][x] // todo: use currentPlayer or pass in as paramter?
+    let player = this.board[y][x]
     let winSize = 3;
 
     // columns nad rows

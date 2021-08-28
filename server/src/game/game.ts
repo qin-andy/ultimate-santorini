@@ -5,10 +5,10 @@ import { Player } from "./player";
 import { GameEvent, GameUpdate, GameError } from '../types/types';
 
 export class Game {
+  io: Server;
   playerManager: PlayerManager;
   name: string;
   roomId: string;
-  io: Server;
   running: boolean;
   eventHandlerMap: Map<string, Function> // event name to handler
   teamMap: Map<string, string>; // id to team
@@ -21,18 +21,12 @@ export class Game {
     this.running = false;
     this.eventHandlerMap = new Map<string, Function>();
     this.teamMap = new Map<string, string>(); // id to team
-    this.initializeHandlers();
   }
 
   initializeHandlers() {
+    // default handlers
     const handleListPlayers = (event: any, acknowledger: Function) => {
       event.acknowledger(this.playerManager.getNames());
-    }
-
-    const handleChangeName = (event: any, acknowledger: Function) => {
-      let player = this.playerManager.getPlayerById(event.id);
-      player.name = event.payload;
-      event.acknowledger();
     }
 
     const handleMirror = (event: any) => {
@@ -40,15 +34,13 @@ export class Game {
     }
 
     this.eventHandlerMap.set('get player list', handleListPlayers);
-    this.eventHandlerMap.set('update player name', handleChangeName);
     this.eventHandlerMap.set('mirror', handleMirror);
   }
 
-  handleEvent(event: any) {
-    let handler = this.eventHandlerMap.get(event.name)
-    if (handler) {
-      handler(event); // catch errors here somehow?
-    }
+  handleEvent(event: GameEvent) {
+    // default handles all existing events
+    let handler = this.eventHandlerMap.get(event.type)
+    if (handler) handler(event);
   }
 
   addPlayer(player: Player) {
@@ -56,7 +48,7 @@ export class Game {
     // add game action listener for each socket
     player.socket.on('game action', (name: any, payload: any, acknowledger: Function) => {
       let event: GameEvent = {
-        name: name,
+        type: name,
         payload: payload,
         id: player.socket.id,
         acknowledger: acknowledger
@@ -70,7 +62,14 @@ export class Game {
     return this.playerManager.removePlayer(player.id);
   }
 
+  start() {}; // stub
+
   close() {
+    // disconnect all sockets
+    // clear maps
+    // running set false
     this.playerManager.close();
+    this.teamMap.clear();
+    this.eventHandlerMap.clear();
   }
 }
