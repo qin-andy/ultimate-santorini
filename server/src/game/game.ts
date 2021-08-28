@@ -63,10 +63,15 @@ export class Game {
 
   start() {}; // stub
 
-  close() {
+  end() {
     // disconnect all sockets
     // clear maps
     // running set false
+
+  }
+
+  close() {
+    this.end();
     this.playerManager.close();
     this.teamMap.clear();
     this.eventHandlerMap.clear();

@@ -24,24 +24,25 @@ export class TicTacToeGame extends Game {
       if (error) {
         this.io.to(this.roomId).emit('game update', error, null);
       } else {
-        this.io.to(this.roomId).emit('game update', null, update);
+        this.io.to(event.id).emit('game update', null, update);
       }
     }
     this.eventHandlerMap.set('tictactoe mark', handleMark);
   }
 
   handleEvent(event: GameEvent) {
-    super.handleEvent(event); // TODO: conditional logic? don't handle events?
+     super.handleEvent(event);
   }
 
-  close() {
-    super.close();
+  end() {
+    super.end();
     this.turn = '*';
     this.board = [
       '*', '*', '*',
       '*', '*', '*',
       '*', '*', '*'
     ];
+    this.running = false;
   }
 
   // tic tac toe logic
@@ -66,6 +67,16 @@ export class TicTacToeGame extends Game {
   }
 
   mark(id: string, x: number, y: number): [GameError | null, GameUpdate | null] {
+    // game must be running
+    if(!this.running) {
+      let error: GameError = {
+        payload: [x, y],
+        type: 'not running', // TODO : square error?
+        message: 'Game is over' // TODO : include board dimensions and squares
+      }
+      return [error, null];
+    }
+
     // coordinate must exist on board
     let squareIndex = this.getBoardIndex(x, y);
     if (squareIndex >= this.board.length) {
@@ -109,6 +120,7 @@ export class TicTacToeGame extends Game {
       update.message = (this.board[squareIndex] + ' has won!');
       update.type = 'win';
       update.payload = this.board[squareIndex];
+      this.end();
     }
     return [null, update];
   }
