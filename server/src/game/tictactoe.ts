@@ -5,15 +5,13 @@ import { GameError, GameEvent, GameUpdate } from "../types/types";
 export class TicTacToeGame extends Game {
   turn: string;
   board: Array<string>;
+  dimensions: [x: number, y: number];
 
   constructor(name: string, io: Server) {
     super(name, io);
     this.turn = '*';
-    this.board = [
-      '*', '*', '*',
-      '*', '*', '*',
-      '*', '*', '*'
-    ];
+    this.board = [];
+    this.dimensions = [0, 0];
     this.initializeHandlers();
   }
 
@@ -47,10 +45,14 @@ export class TicTacToeGame extends Game {
   }
 
   // tic tac toe logic
-  start() {
+  start(x = 3, y = 3) {
     if (this.playerManager.getCount() === 2) {
       this.teamMap.set(this.playerManager.players[0].id, 'o');
       this.teamMap.set(this.playerManager.players[1].id, 'x');
+
+      this.dimensions = [x, y]; // TODO : validation to cap board size?
+      this.board = new Array<string>(x*y);
+      this.board.fill('*');
       this.turn = 'o';
       this.running = true;
       return true;
@@ -69,7 +71,7 @@ export class TicTacToeGame extends Game {
     if (squareIndex >= this.board.length) {
       let error: GameError = {
         payload: [x, y],
-        type: 'index', // TODO : square error?
+        type: 'out of bounds', // TODO : square error?
         message: 'Invalid square' // TODO : include board dimensions and squares
       }
       return [error, null];
@@ -114,8 +116,8 @@ export class TicTacToeGame extends Game {
   checkWin(x: number, y: number): boolean {
     let squareIndex = this.getBoardIndex(x, y);
     //info
-    let boardX = 2; // index, not length!
-    let boardY = 2;
+    let boardX = this.dimensions[0] - 1; // index, not length!
+    let boardY = this.dimensions[1] - 1;
     let player = this.board[squareIndex];
     let winSize = 3;
 
@@ -123,8 +125,6 @@ export class TicTacToeGame extends Game {
     // rows
     let consecutives = 0;
     for (let i = 0; i < boardX + 1; i++) { // boardX + 1 to loop through entire row/column
-      let currX = i;
-      let currY = y;
       if (this.board[this.getBoardIndex(i, y)] === player) {
         consecutives++;
         if (consecutives === winSize) {
@@ -138,8 +138,6 @@ export class TicTacToeGame extends Game {
     //columns
     consecutives = 0;
     for (let i = 0; i < boardY + 1; i++) {
-      let currX = x;
-      let currY = i;
       if (this.board[this.getBoardIndex(x, i)] === player) {
         consecutives++;
         if (consecutives === winSize) {

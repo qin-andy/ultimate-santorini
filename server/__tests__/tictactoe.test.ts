@@ -6,7 +6,6 @@ import { GameError, GameEvent, GameUpdate } from '../src/types/types';
 import { createSocketPairs, createSocketServer } from './helpers';
 
 describe('tictactoe tests', () => {
-  const CLIENTS_COUNT = 5;
   const IN_BETWEEN_DELAY = 100;
   let port: number;
   let io: Server;
@@ -76,10 +75,11 @@ describe('tictactoe tests', () => {
         expect(game.teamMap.get(clientSockets[0].id)).toBe('o');
         expect(game.teamMap.get(clientSockets[1].id)).toBe('x');
       });
-    })
+    });
 
     describe('win checking', () => {
-      it('board win test 1, diagonal', () => {
+      it('board win test 1, diagonal', async () => {
+        game.dimensions = [3, 3];
         game.board = [
           'o', 'x', 'o',
           'x', 'o', 'x',
@@ -97,6 +97,7 @@ describe('tictactoe tests', () => {
       });
 
       it('board win test 2, rows', () => {
+        game.dimensions = [3, 3];
         game.board = [
           'o', 'o', 'o',
           'x', 'x', 'x',
@@ -116,6 +117,7 @@ describe('tictactoe tests', () => {
       });
 
       it('board win test 3, columns', () => {
+        game.dimensions = [3, 3];
         game.board = [
           'o', 'x', 'o',
           'o', 'x', 'o',
@@ -232,7 +234,75 @@ describe('tictactoe tests', () => {
       });
     });
 
+    describe.only('board size customization', () => {
+      it('start 1x1 board ', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        let expectedBoard = [
+          '*'
+        ];
+        game.start(1, 1);
+        expect(game.board).toStrictEqual(expectedBoard);
+      });
 
+      it('start 2x2 board ', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        let expectedBoard = [
+          '*', '*',
+          '*', '*'
+        ];
+        game.start(2, 2);
+        expect(game.board).toStrictEqual(expectedBoard);
+      });
+
+      it('start 4x2 board ', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        let expectedBoard = [
+          '*', '*', '*', '*',
+          '*', '*', '*', '*'
+        ];
+        game.start(4, 2);
+        expect(game.board).toStrictEqual(expectedBoard);
+      });
+
+      it('mark 1x1 board', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        let expectedBoard = [
+          'o'
+        ];
+        game.start(1, 1);
+        game.mark(clientSockets[0].id, 0, 0);
+        expect(game.board).toStrictEqual(expectedBoard);
+      });
+
+      it('mark 4x2 board ', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        let expectedBoard = [
+          '*', '*', '*', 'o',
+          '*', '*', '*', '*'
+        ];
+        game.start(4, 2);
+        game.mark(clientSockets[0].id, 3, 0);
+        expect(game.board).toStrictEqual(expectedBoard);
+      });
+
+      it('mark 1x1 out of bounds', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        game.start(1, 1);
+        let [error, update] = game.mark(clientSockets[0].id, 2, 3);
+        expect(update).toBe(null);
+        expect(error?.payload).toStrictEqual([2, 3]);
+        expect(error?.type).toBe('out of bounds');
+      });
+
+      it('mark 4x2 out of bounds', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        game.start(4, 2);
+        let [error, update] = game.mark(clientSockets[0].id, 24, 3);
+        expect(update).toBe(null);
+        expect(error?.payload).toStrictEqual([24, 3]);
+        expect(error?.type).toBe('out of bounds');
+      });
+    });
   });
 
   describe('event tests', () => {

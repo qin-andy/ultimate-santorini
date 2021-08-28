@@ -24,17 +24,17 @@ export class Game {
   }
 
   initializeHandlers() {
-    // default handlers
-    const handleListPlayers = (event: any, acknowledger: Function) => {
-      event.acknowledger(this.playerManager.getNames());
-    }
+    // // default handlers
+    // const handleListPlayers = (event: any, acknowledger: Function) => {
+    //   event.acknowledger(this.playerManager.getNames());
+    // }
 
-    const handleMirror = (event: any) => {
-      event.acknowledger(event);
-    }
+    // const handleMirror = (event: any) => {
+    //   event.acknowledger(event);
+    // }
 
-    this.eventHandlerMap.set('get player list', handleListPlayers);
-    this.eventHandlerMap.set('mirror', handleMirror);
+    // this.eventHandlerMap.set('get player list', handleListPlayers);
+    // this.eventHandlerMap.set('mirror', handleMirror);
   }
 
   handleEvent(event: GameEvent) {
