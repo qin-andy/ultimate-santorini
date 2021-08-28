@@ -4,17 +4,17 @@ import { GameError, GameEvent, GameUpdate } from "../types/types";
 
 export class TicTacToeGame extends Game {
   turn: string;
-  board: Array<Array<string>>;
+  board: Array<string>;
 
   constructor(name: string, io: Server) {
     super(name, io);
-
     this.turn = '*';
     this.board = [
-      ['*', '*', '*'],
-      ['*', '*', '*'],
-      ['*', '*', '*']
+      '*', '*', '*',
+      '*', '*', '*',
+      '*', '*', '*'
     ];
+    this.initializeHandlers();
   }
 
   initializeHandlers() {
@@ -40,9 +40,9 @@ export class TicTacToeGame extends Game {
     super.close();
     this.turn = '*';
     this.board = [
-      ['*', '*', '*'],
-      ['*', '*', '*'],
-      ['*', '*', '*']
+      '*', '*', '*',
+      '*', '*', '*',
+      '*', '*', '*'
     ];
   }
 
@@ -58,7 +58,23 @@ export class TicTacToeGame extends Game {
     return false;
   }
 
+  getBoardIndex(x: number, y: number): number {
+    let xSize = 3;
+    return x + y*xSize;
+  }
+
   mark(id: string, x: number, y: number): [GameError | null, GameUpdate | null] {
+    // coordinate must exist on board
+    let squareIndex = this.getBoardIndex(x, y);
+    if (squareIndex >= this.board.length) {
+      let error: GameError = {
+        payload: [x, y],
+        type: 'index', // TODO : square error?
+        message: 'Invalid square' // TODO : include board dimensions and squares
+      }
+      return [error, null];
+    }
+
     // It must be the player's turn to mark
     if (this.teamMap.get(id) !== this.turn) {
       let error: GameError = {
@@ -70,7 +86,7 @@ export class TicTacToeGame extends Game {
     }
 
     // Space must be empty
-    if (this.board[y][x] !== '*') {
+    if (this.board[squareIndex] !== '*') {
       let error: GameError = {
         payload: null,
         type: 'occupied',
@@ -79,7 +95,7 @@ export class TicTacToeGame extends Game {
       return [error, null];
     }
 
-    this.board[y][x] = this.turn;
+    this.board[squareIndex] = this.turn;
     this.turn = this.teamMap.get(id) === 'o' ? 'x' : 'o';
     let update: GameUpdate = {
       payload: this.board,
@@ -88,18 +104,19 @@ export class TicTacToeGame extends Game {
     }
     // winner
     if (this.checkWin(x, y)) {
-      update.message = (this.board[y][x] + ' has won!');
+      update.message = (this.board[squareIndex] + ' has won!');
       update.type = 'win';
-      update.payload = this.board[y][x];
+      update.payload = this.board[squareIndex];
     }
     return [null, update];
   }
 
   checkWin(x: number, y: number): boolean {
+    let squareIndex = this.getBoardIndex(x, y);
     //info
     let boardX = 2; // index, not length!
     let boardY = 2;
-    let player = this.board[y][x]
+    let player = this.board[squareIndex];
     let winSize = 3;
 
     // columns nad rows
@@ -108,7 +125,7 @@ export class TicTacToeGame extends Game {
     for (let i = 0; i < boardX + 1; i++) { // boardX + 1 to loop through entire row/column
       let currX = i;
       let currY = y;
-      if (this.board[currY][currX] === player) {
+      if (this.board[this.getBoardIndex(i, y)] === player) {
         consecutives++;
         if (consecutives === winSize) {
           return true;
@@ -123,7 +140,7 @@ export class TicTacToeGame extends Game {
     for (let i = 0; i < boardY + 1; i++) {
       let currX = x;
       let currY = i;
-      if (this.board[currY][currX] === player) {
+      if (this.board[this.getBoardIndex(x, i)] === player) {
         consecutives++;
         if (consecutives === winSize) {
           return true;
@@ -144,7 +161,7 @@ export class TicTacToeGame extends Game {
     for (let i = 0; i < diagonalLength; i++) {
       let currX = topLeft[0] + i;
       let currY = topLeft[1] + i;
-      if (this.board[currY][currX] === player) {
+      if (this.board[this.getBoardIndex(currY, currX)] === player) {
         consecutives++;
         if (consecutives === winSize) {
           return true;
@@ -165,7 +182,7 @@ export class TicTacToeGame extends Game {
     for (let i = 0; i < diagonalLength; i++) {
       let currX = topRight[0] - i;
       let currY = topRight[1] + i;
-      if (this.board[currY][currX] === player) {
+      if (this.board[this.getBoardIndex(currY, currX)] === player) {
         consecutives++;
         if (consecutives === winSize) {
           return true;
