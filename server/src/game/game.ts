@@ -2,7 +2,7 @@ import { Server } from 'socket.io';
 import { PlayerManager } from "./playerManager";
 import { nanoid } from "nanoid";
 import { Player } from "./player";
-import { GameEvent, GameUpdate, GameError } from '../types/types';
+import { GameEvent, GameResponse } from '../types/types';
 
 export class Game {
   io: Server;
@@ -61,13 +61,12 @@ export class Game {
     return this.playerManager.removePlayer(player.id);
   }
 
-  start() {}; // stub
+  start() {
+    // initalizes game's custom settings
+  };
 
   end() {
-    // disconnect all sockets
-    // clear maps
-    // running set false
-
+    // resets game data
   }
 
   close() {

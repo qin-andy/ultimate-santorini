@@ -1,6 +1,6 @@
 import { Game } from "./game";
 import { Server } from 'socket.io';
-import { GameError, GameEvent, GameUpdate } from "../types/types";
+import { GameEvent, GameResponse } from "../types/types";
 
 export class TicTacToeGame extends Game {
   turn: string;
@@ -20,11 +20,11 @@ export class TicTacToeGame extends Game {
 
     // tic tac toe handlers
     const handleMark = (event: GameEvent) => {
-      let [error, update] = this.mark(event.id, event.payload.x, event.payload.y);
-      if (error) {
-        this.io.to(this.roomId).emit('game update', error, null);
+      let response = this.mark(event.id, event.payload.x, event.payload.y);
+      if (response.error) {
+        this.io.to(this.roomId).emit('game update', response);
       } else {
-        this.io.to(event.id).emit('game update', null, update);
+        this.io.to(event.id).emit('game update', response);
       }
     }
     this.eventHandlerMap.set('tictactoe mark', handleMark);
@@ -51,7 +51,7 @@ export class TicTacToeGame extends Game {
       this.teamMap.set(this.playerManager.players[0].id, 'o');
       this.teamMap.set(this.playerManager.players[1].id, 'x');
 
-      this.dimensions = [x, y]; // TODO : validation to cap board size?
+      this.dimensions = [x, y];
       this.board = new Array<string>(x*y);
       this.board.fill('*');
       this.turn = 'o';
@@ -66,63 +66,68 @@ export class TicTacToeGame extends Game {
     return x + y*xSize;
   }
 
-  mark(id: string, x: number, y: number): [GameError | null, GameUpdate | null] {
+  mark(id: string, x: number, y: number): GameResponse {
     // game must be running
     if(!this.running) {
-      let error: GameError = {
+      let error: GameResponse = {
+        error: true,
         payload: [x, y],
         type: 'not running', // TODO : square error?
         message: 'Game is over' // TODO : include board dimensions and squares
       }
-      return [error, null];
+      return error;
     }
 
     // coordinate must exist on board
     let squareIndex = this.getBoardIndex(x, y);
     if (squareIndex >= this.board.length) {
-      let error: GameError = {
+      let error: GameResponse = {
+        error: true,
         payload: [x, y],
         type: 'out of bounds', // TODO : square error?
         message: 'Invalid square' // TODO : include board dimensions and squares
       }
-      return [error, null];
+      return error;
     }
 
     // It must be the player's turn to mark
     if (this.teamMap.get(id) !== this.turn) {
-      let error: GameError = {
+      let error: GameResponse = {
+        error: true,
         payload: this.turn,
         type: 'turn',
         message: 'Cannot mark for ' + this.teamMap.get(id) + ': It is ' + this.turn + '\'s turn!'
       }
-      return [error, null];
+      return error;
     }
 
     // Space must be empty
     if (this.board[squareIndex] !== '*') {
-      let error: GameError = {
+      let error: GameResponse = {
+        error: true,
         payload: null,
         type: 'occupied',
         message: x + ', ' + y + ': Square is occupied!'
       }
-      return [error, null];
+      return error;
     }
 
     this.board[squareIndex] = this.turn;
     this.turn = this.teamMap.get(id) === 'o' ? 'x' : 'o';
-    let update: GameUpdate = {
+    let response: GameResponse = {
+      error: false,
       payload: this.board,
       type: 'mark',
       message: 'player marked, now it is ' + this.turn + '\'s turn'
     }
     // winner
     if (this.checkWin(x, y)) {
-      update.message = (this.board[squareIndex] + ' has won!');
-      update.type = 'win';
-      update.payload = this.board[squareIndex];
+      response.message = (this.board[squareIndex] + ' has won!');
+      response.type = 'win';
+      response.payload = this.board[squareIndex];
       this.end();
     }
-    return [null, update];
+    return response;
   }
 
   checkWin(x: number, y: number): boolean {

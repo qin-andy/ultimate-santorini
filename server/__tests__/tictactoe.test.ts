@@ -2,7 +2,7 @@ import { Server, Socket as ServerSocket } from 'socket.io';
 import { Socket as ClientSocket } from 'socket.io-client';
 import { TicTacToeGame } from '../src/game/tictactoe';
 import { Player } from '../src/game/player';
-import { GameError, GameEvent, GameUpdate } from '../src/types/types';
+import { GameEvent, GameResponse } from '../src/types/types';
 import { createSocketPairs, createSocketServer } from './helpers';
 
 describe('tictactoe tests', () => {
@@ -153,24 +153,24 @@ describe('tictactoe tests', () => {
       it('single mark GameUpdate has correct contents', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
         game.start();
-        let [error, update] = game.mark(clientSockets[0].id, 1, 1);
+        let response = game.mark(clientSockets[0].id, 1, 1);
         let expectedBoard = [
           '*', '*', '*',
           '*', 'o', '*',
           '*', '*', '*'
         ];
-        expect(error).toBe(null);
-        expect(update?.payload).toStrictEqual(expectedBoard);
-        expect(update?.type).toBe('mark');
+        expect(response.error).toBe(false);
+        expect(response.payload).toStrictEqual(expectedBoard);
+        expect(response.type).toBe('mark');
       });
 
-      it('multiple marks', async () => {
+      it('multiple marks affects board', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
         game.start();
         game.mark(clientSockets[0].id, 1, 1);
         game.mark(clientSockets[1].id, 0, 1);
         game.mark(clientSockets[0].id, 0, 2);
-        let [error, update] = game.mark(clientSockets[1].id, 1, 2);
+        game.mark(clientSockets[1].id, 1, 2);
         let expectedBoard = [
           '*', '*', '*',
           'x', 'o', '*',
@@ -194,10 +194,10 @@ describe('tictactoe tests', () => {
           'x', 'o', '*',
           'o', '*', '*'
         ];
-        let [error, update] = game.mark(clientSockets[0].id, 2, 0);
-        expect(error).toBe(null);
-        expect(update?.type).toBe('win');
-        expect(update?.payload).toBe('o');
+        let response = game.mark(clientSockets[0].id, 2, 0);
+        expect(response.error).toBe(false);
+        expect(response.type).toBe('win');
+        expect(response.payload).toBe('o');
       });
 
       it('mark board winning mark wins game x', async () => {
@@ -209,61 +209,61 @@ describe('tictactoe tests', () => {
           'o', '*', '*'
         ];
         game.turn = 'x';
-        let [error, update] = game.mark(clientSockets[1].id, 0, 0);
-        expect(error).toBe(null);
-        expect(update?.type).toBe('win');
-        expect(update?.payload).toBe('x');
+        let response = game.mark(clientSockets[1].id, 0, 0);
+        expect(response.error).toBe(false);
+        expect(response.type).toBe('win');
+        expect(response.payload).toBe('x');
       });
 
       it('mark board when its not your turn gives "turn" error', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
         game.start();
-        let [error, update] = game.mark(clientSockets[1].id, 1, 1);
-        expect(update).toBe(null);
-        expect(error?.type).toBe('turn');
-        expect(error?.payload).toBe('o');
+        let response = game.mark(clientSockets[1].id, 1, 1);
+        expect(response.error).toBe(true);
+        expect(response.type).toBe('turn');
+        expect(response.payload).toBe('o');
       });
 
       it('mark occupied square gives "occupied" error', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
         game.start();
         game.mark(clientSockets[0].id, 1, 1)
-        let [error, update] = game.mark(clientSockets[1].id, 1, 1);
-        expect(update).toBe(null);
-        expect(error?.type).toBe('occupied');
+        let response = game.mark(clientSockets[1].id, 1, 1);
+        expect(response.error).toBe(true);
+        expect(response.type).toBe('occupied');
       });
 
       it('mark out of bounds gives "out of bounds" error', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
         game.start();
-        let [error, update] = game.mark(clientSockets[0].id, 5, 5);
-        expect(update).toBe(null);
-        expect(error?.type).toBe('out of bounds');
-        expect(error?.payload).toStrictEqual([5, 5]);
+        let response = game.mark(clientSockets[0].id, 5, 5);
+        expect(response.error).toBe(true);
+        expect(response.type).toBe('out of bounds');
+        expect(response.payload).toStrictEqual([5, 5]);
       });
 
       it('mark game with running false gives "not running" error', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
         game.running = false;
-        let [error, update] = game.mark(clientSockets[0].id, 0, 0);
-        expect(update).toBe(null);
-        expect(error?.type).toBe('not running');
+        let response = game.mark(clientSockets[0].id, 0, 0);
+        expect(response.error).toBe(true);
+        expect(response.type).toBe('not running');
       });
 
       it('mark game before start gives "not running" error', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
-        let [error, update] = game.mark(clientSockets[0].id, 0, 0);
-        expect(update).toBe(null);
-        expect(error?.type).toBe('not running');
+        let response = game.mark(clientSockets[0].id, 0, 0);
+        expect(response.error).toBe(true);
+        expect(response.type).toBe('not running');
       });
 
       it('mark game after close gives "not running" error', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
         game.start();
         game.end();
-        let [error, update] = game.mark(clientSockets[0].id, 0, 0);
-        expect(update).toBe(null);
-        expect(error?.type).toBe('not running');
+        let response = game.mark(clientSockets[0].id, 0, 0);
+        expect(response.error).toBe(true);
+        expect(response.type).toBe('not running');
       });
 
       it('mark game after win gives "not running" error', async () => {
@@ -275,9 +275,9 @@ describe('tictactoe tests', () => {
           'o', '*', '*'
         ];
         game.mark(clientSockets[0].id, 2, 0);
-        let [error, update] = game.mark(clientSockets[1].id, 0, 0);
-        expect(update).toBe(null);
-        expect(error?.type).toBe('not running');
+        let response = game.mark(clientSockets[1].id, 0, 0);
+        expect(response.error).toBe(true);
+        expect(response.type).toBe('not running');
       });
     });
 
@@ -335,19 +335,19 @@ describe('tictactoe tests', () => {
       it('mark 1x1 out of bounds', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
         game.start(1, 1);
-        let [error, update] = game.mark(clientSockets[0].id, 2, 3);
-        expect(update).toBe(null);
-        expect(error?.payload).toStrictEqual([2, 3]);
-        expect(error?.type).toBe('out of bounds');
+        let response = game.mark(clientSockets[0].id, 2, 3);
+        expect(response.error).toBe(true);
+        expect(response.payload).toStrictEqual([2, 3]);
+        expect(response.type).toBe('out of bounds');
       });
 
       it('mark 4x2 out of bounds', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
         game.start(4, 2);
-        let [error, update] = game.mark(clientSockets[0].id, 24, 3);
-        expect(update).toBe(null);
-        expect(error?.payload).toStrictEqual([24, 3]);
-        expect(error?.type).toBe('out of bounds');
+        let response = game.mark(clientSockets[0].id, 24, 3);
+        expect(response.error).toBe(true);
+        expect(response.payload).toStrictEqual([24, 3]);
+        expect(response.type).toBe('out of bounds');
       });
     });
   });
@@ -355,20 +355,20 @@ describe('tictactoe tests', () => {
   describe('event tests', () => {
 
     // with timeout
-    let updatePromiseFactory = async (i: number) => { // helper function for game responses
-      let timeout = new Promise<GameUpdate>((resolve, reject) => {
+    let responsePromiseFactory = async (i: number) => { // helper function for game responses
+      let timeout = new Promise<GameResponse>((resolve, reject) => {
         let id = setTimeout(() => {
           clearTimeout(id);
           reject('Promise timed out!');
         }, 1000);
       });
 
-      let updatePromise = new Promise<GameUpdate>((resolve, reject) => {
-        clientSockets[i].once('game update', (err: GameError | null, update: GameUpdate | null) => {
-          if (update) {
-            resolve(update)
+      let updatePromise = new Promise<GameResponse>((resolve, reject) => {
+        clientSockets[i].once('game update', (response: GameResponse) => {
+          if (response.error) {
+            reject(response);
           } else {
-            reject(err);
+            resolve(response)
           }
         });
       });
@@ -378,7 +378,7 @@ describe('tictactoe tests', () => {
 
     let boardPromiseFactory = async (i: number) => { // helper function for game responses
       return new Promise<string[]>(async (resolve, reject) => {
-        let update = await updatePromiseFactory(i);
+        let update = await responsePromiseFactory(i);
         if (update.type === 'mark') {
           resolve(update.payload);
         } else {
@@ -407,7 +407,7 @@ describe('tictactoe tests', () => {
       expect(board).toStrictEqual(expectedBoard);
     });
 
-    it.only('multiple board marks through events has correct board', async () => {
+    it('multiple board marks through events has correct board', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
       game.start();
       let expectedBoard = [
@@ -444,7 +444,7 @@ describe('tictactoe tests', () => {
       expect(boardPromise).rejects.toBeTruthy(); // is there a way to read the error?
     });
 
-    it.only('full game 1', async () => {
+    it('full game 1', async () => {
       // direct game, no errors
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
       game.start();
@@ -473,12 +473,12 @@ describe('tictactoe tests', () => {
       clientSockets[1].emit('game action', 'tictactoe mark', { x: 2, y: 1 });
       await boardPromise;
 
-      let updatePromise = updatePromiseFactory(0);
+      let responsePromise = responsePromiseFactory(0);
       clientSockets[0].emit('game action', 'tictactoe mark', { x: 2, y: 0 });
-      let update = await updatePromise;
+      let response = await responsePromise;
 
-      expect(update.payload).toBe('o');
-      expect(update.type).toBe('win');
+      expect(response.payload).toBe('o');
+      expect(response.type).toBe('win');
     });
   });
 });

@@ -9,13 +9,8 @@ export interface GameEvent {
   acknowledger: Function
 }
 
-export interface GameUpdate {
-  payload: any,
-  type: string,
-  message: string
-}
-
-export interface GameError {
+export interface GameResponse {
+  error: boolean,
   payload: any,
   type: string,
   message: string
