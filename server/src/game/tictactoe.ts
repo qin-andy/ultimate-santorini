@@ -46,19 +46,29 @@ export class TicTacToeGame extends Game {
   }
 
   // tic tac toe logic
-  start(x = 3, y = 3) {
-    if (this.playerManager.getCount() === 2) {
-      this.teamMap.set(this.playerManager.players[0].id, 'o');
-      this.teamMap.set(this.playerManager.players[1].id, 'x');
-
-      this.dimensions = [x, y];
-      this.board = new Array<string>(x*y);
-      this.board.fill('*');
-      this.turn = 'o';
-      this.running = true;
-      return true;
+  start(x = 3, y = 3): GameResponse {
+    if (this.playerManager.getCount() !== 2) {
+      return {
+        error: true,
+        payload: this.playerManager.getCount(),
+        type: 'start fail',
+        message: 'Game can only start with 2 players!'
+      };
     }
-    return false;
+    this.teamMap.set(this.playerManager.players[0].id, 'o');
+    this.teamMap.set(this.playerManager.players[1].id, 'x');
+
+    this.dimensions = [x, y];
+    this.board = new Array<string>(x*y);
+    this.board.fill('*');
+    this.turn = 'o';
+    this.running = true;
+    return {
+      error: false,
+      payload: null,
+      type: 'start success',
+      message: 'Game started!'
+    }
   }
 
   getBoardIndex(x: number, y: number): number {

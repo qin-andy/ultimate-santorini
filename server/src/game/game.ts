@@ -61,8 +61,14 @@ export class Game {
     return this.playerManager.removePlayer(player.id);
   }
 
-  start() {
+  start(): GameResponse {
     // initalizes game's custom settings
+    return {
+      error: true,
+      payload: null,
+      type: 'null',
+      message: 'this game has no start feature yet!'
+    }
   };
 
   end() {

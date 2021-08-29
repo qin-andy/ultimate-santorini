@@ -56,17 +56,17 @@ describe('tictactoe tests', () => {
     describe('player mangement', () => {
       it('game cannot start without 2 players', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
-        expect(game.start()).toBe(false);
+        expect(game.start().error).toBe(true);
       });
 
       it('game start with 2 players', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
-        expect(game.start()).toBe(true);
+        expect(game.start().error).toBe(false);
       });
 
       it('game cannot start with 3 players', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 3);
-        expect(game.start()).toBe(false);
+        expect(game.start().error).toBe(true);
       });
 
       it('game start players are assigned respective turns', async () => {
