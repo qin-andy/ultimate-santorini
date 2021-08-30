@@ -76,6 +76,7 @@ export class Game {
   }
 
   close() {
+    // TODO : on player disconnect, if room is empty, close self?
     this.end();
     this.playerManager.close();
     this.teamMap.clear();

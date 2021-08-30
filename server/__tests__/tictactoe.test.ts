@@ -47,6 +47,7 @@ describe('tictactoe tests', () => {
     playerCount = 1;
     clientSockets.forEach((socket) => socket.close());
     clientSockets = [];
+    serverSockets = [];
     players = [];
     game.close();
     setTimeout(done, IN_BETWEEN_DELAY);
