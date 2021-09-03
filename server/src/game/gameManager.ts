@@ -11,9 +11,11 @@ export class GameManager {
     this.io = io;
     this.gamesMap = new Map<string, Game>();
     this.playersMap = new Map<string, Player>();
+    this.attachListeners(io);
+  }
 
+  attachListeners(io: Server) {
     io.on('connect', (socket) => {
-      console.log(socket.id + ' connected!');
       this.playersMap.set(socket.id, new Player(socket, 'New Player'));
 
       socket.on('ping', (acknowledger: Function) => {
@@ -48,9 +50,14 @@ export class GameManager {
   }
 
   close() {
-    this.gamesMap.forEach((game, id) => {
+    this.gamesMap.forEach(game => {
       game.close();
     });
+    this.playersMap.forEach(player => {
+      player.socket.disconnect();
+    });
+    this.gamesMap.clear();
+    this.playersMap.clear();
     this.io.removeAllListeners();
   }
 }
