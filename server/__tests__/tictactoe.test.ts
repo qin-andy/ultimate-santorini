@@ -357,13 +357,6 @@ describe('tictactoe tests', () => {
 
     // with timeout
     let responsePromiseFactory = async (i: number) => { // helper function for game responses
-      let timeout = new Promise<GameResponse>((resolve, reject) => {
-        let id = setTimeout(() => {
-          clearTimeout(id);
-          reject('Promise timed out!');
-        }, 1000);
-      });
-
       let updatePromise = new Promise<GameResponse>((resolve, reject) => {
         clientSockets[i].once('game update', (response: GameResponse) => {
           if (response.error) {
@@ -373,8 +366,7 @@ describe('tictactoe tests', () => {
           }
         });
       });
-
-      return Promise.race([updatePromise, timeout]);
+      return updatePromise;
     }
 
     let boardPromiseFactory = async (i: number) => { // helper function for game responses

@@ -38,7 +38,7 @@ export class GameManager {
         let player = this.playersMap.get(socket.id);
         if (!this.gamesMap.has(gameId) && player && !player?.inGame) {
           player.inGame = true;
-          let game = new TicTacToeGame(gameId, io)
+          let game = new Game(gameId, io)
           this.gamesMap.set(gameId, game);
           game.addPlayer(player);
           acknowledger(true); // TODO : detailed acknowledgements
