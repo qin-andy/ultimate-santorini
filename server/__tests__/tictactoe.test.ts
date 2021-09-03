@@ -53,6 +53,34 @@ describe('tictactoe tests', () => {
     setTimeout(done, IN_BETWEEN_DELAY);
   });
 
+  let responsePromiseFactory = async (i: number) => { // helper function for game responses
+    let updatePromise = new Promise<GameResponse>((resolve, reject) => {
+      clientSockets[i].once('game update', (response: GameResponse) => {
+        if (response.error) {
+          reject(response);
+        } else {
+          resolve(response)
+        }
+      });
+    });
+    return updatePromise;
+  }
+
+  let boardPromiseFactory = async (i: number) => { // helper function for game responses
+    return new Promise<string[]>(async (resolve, reject) => {
+      let update = await responsePromiseFactory(i);
+      if (update.type === 'mark') {
+        resolve(update.payload);
+      } else {
+        reject(update.payload);
+      }
+    });
+  }
+
+  let sleepFactory = (delay: number) => {
+    return new Promise<void>(resolve => { setTimeout(resolve, delay) });
+  }
+
   describe('direct game tests', () => {
     describe('player mangement', () => {
       it('game cannot start without 2 players', async () => {
@@ -354,38 +382,6 @@ describe('tictactoe tests', () => {
   });
 
   describe('event tests', () => {
-
-    // with timeout
-    let responsePromiseFactory = async (i: number) => { // helper function for game responses
-      let updatePromise = new Promise<GameResponse>((resolve, reject) => {
-        clientSockets[i].once('game update', (response: GameResponse) => {
-          if (response.error) {
-            reject(response);
-          } else {
-            resolve(response)
-          }
-        });
-      });
-      return updatePromise;
-    }
-
-    let boardPromiseFactory = async (i: number) => { // helper function for game responses
-      return new Promise<string[]>(async (resolve, reject) => {
-        let update = await responsePromiseFactory(i);
-        if (update.type === 'mark') {
-          resolve(update.payload);
-        } else {
-          reject(update.payload);
-        }
-      });
-    }
-
-    function sleep(time: number) {
-      return new Promise<void>(resolve => {
-        setTimeout(resolve, time);
-      })
-    }
-
     it('mark board after game start updates board', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
       game.start();
@@ -465,6 +461,57 @@ describe('tictactoe tests', () => {
       boardPromise = boardPromiseFactory(1);
       clientSockets[1].emit('game action', 'tictactoe mark', { x: 2, y: 1 });
       await boardPromise;
+
+      let responsePromise = responsePromiseFactory(0);
+      clientSockets[0].emit('game action', 'tictactoe mark', { x: 2, y: 0 });
+      let response = await responsePromise;
+
+      expect(response.payload).toBe('o');
+      expect(response.type).toBe('win');
+    });
+
+    it('full game 2', async () => {
+      // direct game, repeated actions/moving out of turn
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      game.start();
+
+      clientSockets[0].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
+      await sleepFactory(200);
+
+      // repeated
+      clientSockets[0].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
+      await sleepFactory(200);
+
+      // mark existing
+      clientSockets[1].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
+      await sleepFactory(200);
+
+      clientSockets[1].emit('game action', 'tictactoe mark', { x: 0, y: 1 });
+      await sleepFactory(200);
+
+      // repeated
+      clientSockets[1].emit('game action', 'tictactoe mark', { x: 0, y: 1 });
+      await sleepFactory(200);
+
+      clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
+      await sleepFactory(200);
+
+      // mark existing
+      clientSockets[1].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
+      await sleepFactory(200);
+
+      clientSockets[1].emit('game action', 'tictactoe mark', { x: 2, y: 2 });
+      await sleepFactory(200);
+
+      clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 0 });
+      await sleepFactory(200);
+
+      clientSockets[1].emit('game action', 'tictactoe mark', { x: 2, y: 1 });
+      await sleepFactory(200);
+
+      // repeated
+      clientSockets[1].emit('game action', 'tictactoe mark', { x: 2, y: 1 });
+      await sleepFactory(200);
 
       let responsePromise = responsePromiseFactory(0);
       clientSockets[0].emit('game action', 'tictactoe mark', { x: 2, y: 0 });

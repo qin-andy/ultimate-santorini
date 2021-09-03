@@ -28,20 +28,25 @@ export class GameManager {
         if (game && player && !player?.inGame) {
           player.inGame = true;
           game.addPlayer(player);
-          acknowledger(true); // TODO : detailed acknowledgements
+          acknowledger(true);
         } else {
           acknowledger(false);
         }
       });
 
-      socket.on('create game', (gameId: string, acknowledger: Function) => {
+      socket.on('create game', (gameId: string, type: string = '', acknowledger: Function) => {
         let player = this.playersMap.get(socket.id);
         if (!this.gamesMap.has(gameId) && player && !player?.inGame) {
           player.inGame = true;
-          let game = new Game(gameId, io)
+          let game: Game;
+          if (type === 'tictactoe') {
+            game = new TicTacToeGame(gameId, io)
+          } else {
+            game = new Game(gameId, io)
+          }
           this.gamesMap.set(gameId, game);
           game.addPlayer(player);
-          acknowledger(true); // TODO : detailed acknowledgements
+          acknowledger(true);
         } else {
           acknowledger(false);
         }

@@ -18,7 +18,6 @@ export class TicTacToeGame extends Game {
   initializeHandlers() {
     super.initializeHandlers();
 
-    // tic tac toe handlers
     const handleMark = (event: GameEvent) => {
       let response = this.mark(event.id, event.payload.x, event.payload.y);
       if (response.error) {

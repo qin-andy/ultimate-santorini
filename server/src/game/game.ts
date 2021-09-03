@@ -44,7 +44,7 @@ export class Game {
   }
 
   addPlayer(player: Player) {
-    player.socket.join(this.roomId); // TODO : do i have to clean this up on disconnect?
+    player.socket.join(this.roomId);
     player.socket.on('game action', (name: any, payload: any, acknowledger: Function) => {
       let event: GameEvent = {
         type: name,
