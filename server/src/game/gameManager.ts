@@ -51,6 +51,11 @@ export class GameManager {
           acknowledger(false);
         }
       });
+
+      socket.on('disconnect', () => {
+        // game removal handled in playerManagement class
+        this.playersMap.delete(socket.id);
+      });
     });
   }
 

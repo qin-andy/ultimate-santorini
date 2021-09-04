@@ -42,8 +42,6 @@ describe('game manager tests', () => {
     setTimeout(done, IN_BETWEEN_DELAY);
   });
 
-
-  // Promise Factories
   let sleepFactory = (delay: number) => {
     return new Promise<void>(resolve => { setTimeout(resolve, delay) });
   }
@@ -318,10 +316,33 @@ describe('game manager tests', () => {
       expect(pingPromise).rejects.toBe('timeout');
     });
 
-    it.todo('closing ends all games');
+    it('closing gamemanager closes all games', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 6);
+      await createGameFactory(clientSockets[0], 'Game 1', 'tictactoe');
+      await joinGameFactory(clientSockets[1], 'Game 1');
+
+      await createGameFactory(clientSockets[2], 'Game 2', 'tictactoe');
+      await joinGameFactory(clientSockets[3], 'Game 2');
+
+      await createGameFactory(clientSockets[4], 'Game 3', 'tictactoe');
+      await joinGameFactory(clientSockets[5], 'Game 3');
+      let game1 = gameManager.gamesMap.get('Game 1');
+      let game2 = gameManager.gamesMap.get('Game 2');
+      let game3 = gameManager.gamesMap.get('Game 3');
+
+      game1?.start();
+      game2?.start();
+      game3?.start();
+
+      gameManager.close();
+      // only checks if running is toggled back to false. is there a more robust way to check game closure?
+      expect(game1?.running).toBe(false);
+      expect(game2?.running).toBe(false);
+      expect(game3?.running).toBe(false);
+    });
   });
 
-  describe.only('concurrent tictactoe games with multiple sockets', () => {
+  describe('concurrent tictactoe games with multiple sockets', () => {
     it('full game set 1', async () => {
       // Two games, first has errors and wins, second ends on a mark
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 4);
@@ -486,6 +507,10 @@ describe('game manager tests', () => {
         expect(response.payload).toBe('o');
         expect(response.type).toBe('win');
       });
+    });
+
+    it('join and create attempts set 1', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 5);
     });
   });
 });

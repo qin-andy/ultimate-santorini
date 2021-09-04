@@ -54,8 +54,9 @@ export class TicTacToeGame extends Game {
         message: 'Game can only start with 2 players!'
       };
     }
-    this.teamMap.set(this.playerManager.players[0].id, 'o');
-    this.teamMap.set(this.playerManager.players[1].id, 'x');
+    let players = Array.from(this.playerManager.playerMap.values())
+    this.teamMap.set(players[0].id, 'o');
+    this.teamMap.set(players[1].id, 'x');
 
     this.dimensions = [x, y];
     this.board = new Array<string>(x*y);

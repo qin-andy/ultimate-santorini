@@ -5,7 +5,7 @@ import { Player } from '../src/game/player';
 import { createClientSockets, createSocketPairs, createSocketServer } from './helpers';
 
 describe('player manager tests', () => {
-  const IN_BETWEEN_DELAY = 100;
+  const IN_BETWEEN_DELAY = 25;
   const CLIENTS_COUNT = 5;
   let port: number;
   let io: Server;
@@ -79,7 +79,7 @@ describe('player manager tests', () => {
 
   describe('adding and removing players', () => {
     it('players list matches', () => {
-      expect(playerManager.players).toEqual(expect.arrayContaining(players));
+      expect(Array.from(playerManager.playerMap.values())).toEqual(expect.arrayContaining(players));
     });
 
     it('add new players get names returns new ids', async () => {
@@ -95,7 +95,6 @@ describe('player manager tests', () => {
       let [newClientSockets, newServerSockets] = (await createSocketPairs(io, port, 1));
       clientSockets.push(newClientSockets[0]); // to let jest hooks cleanup the new socket
       let newPlayer = new Player(newServerSockets[0], 'New Player');
-      playerManager.addPlayer(newPlayer);
       expect(() => playerManager.addPlayer(newPlayer)).toThrowError();
     });
 
@@ -120,6 +119,13 @@ describe('player manager tests', () => {
 
     it('remove nonexistaent player throws error', () => {
       expect(() => playerManager.removePlayer('invalid player name')).toThrowError();
-    })
+    });
+
+    it('disconnect removes player', async () => {
+      clientSockets[0].disconnect();
+      expect(playerManager.playerMap.get(clientSockets[0].id)).toBe(undefined);
+    });
+
+    // TODO : Closing functionality
   });
 });

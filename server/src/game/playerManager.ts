@@ -1,20 +1,17 @@
 import { Player } from "./player";
 
 export class PlayerManager {
-  players: Player[];
   playerMap: Map<string, Player>;
 
   constructor() {
-    this.players = [];
     this.playerMap = new Map<string, Player>();
   }
 
   addPlayer(player: Player): Player {
-    if (this.players.includes(player)) throw Error('Player already exists!');
-    this.players.push(player);
+    if (this.playerMap.has(player.id)) throw Error('Player already exists!');
 
     this.playerMap.set(player.id, player);
-    player.socket.on('disconnect', () => () => {
+    player.socket.on('disconnect', () => {
       this.removePlayer(player.id);
     });
     return player;
@@ -23,9 +20,6 @@ export class PlayerManager {
   removePlayer(id: string): Player {
     let removedPlayer: Player;
     removedPlayer = this.getPlayerById(id);
-    this.players = this.players.filter((player) => {
-      return player.id !== removedPlayer.id;
-    });
     this.playerMap.delete(id);
     removedPlayer.socket.removeAllListeners();
     removedPlayer.socket.disconnect();
@@ -33,19 +27,17 @@ export class PlayerManager {
   }
 
   getIds(): string[] {
-    return this.players.map((player) => {
-      return player.id;
-    });
+    return Array.from(this.playerMap.keys());
   }
 
   getNames(): string[] {
-    return this.players.map((player) => {
+    return Array.from(this.playerMap.values()).map((player) => {
       return player.name;
     });
   }
 
   getCount(): number {
-    return this.players.length;
+    return this.playerMap.size;
   }
 
   getPlayerById(id: string): Player {
@@ -57,10 +49,9 @@ export class PlayerManager {
   }
 
   close(): void {
-    this.playerMap.clear();
-    this.players.forEach((player => {
+    this.playerMap.forEach(player => {
       player.socket.disconnect();
-    }));
-    this.players = [];
+    });
+    this.playerMap.clear();
   }
 }

@@ -7,7 +7,6 @@ describe('player class testing', () => {
   let io: Server, serverSocket: ServerSocket, clientSocket: ClientSocket;
   let player1: Player;
   let port: number;
-  const DONE_TIMEOUT = 300;
 
   beforeAll(async () => {
     [io, port] = await createSocketServer();

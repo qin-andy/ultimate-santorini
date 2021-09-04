@@ -19,21 +19,17 @@ export class Game {
     this.roomId = nanoid();
     this.io = io;
     this.running = false;
-    this.eventHandlerMap = new Map<string, Function>();
+    this.eventHandlerMap = new Map<string, Function>(); // event name to callback
     this.teamMap = new Map<string, string>(); // id to team
   }
 
   initializeHandlers() {
-    // // default handlers
-    // const handleListPlayers = (event: any, acknowledger: Function) => {
-    //   event.acknowledger(this.playerManager.getNames());
-    // }
-
+    // default handlers
+    // EXAMPLE:
     // const handleMirror = (event: any) => {
     //   event.acknowledger(event);
     // }
 
-    // this.eventHandlerMap.set('get player list', handleListPlayers);
     // this.eventHandlerMap.set('mirror', handleMirror);
   }
 
@@ -73,6 +69,7 @@ export class Game {
 
   end() {
     // resets game data
+    // to be implemented in children
   }
 
   close() {

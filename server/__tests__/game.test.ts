@@ -78,10 +78,14 @@ describe('game class tests', () => {
       expect(game.playerManager.getNames()[0]).toEqual(players[2].name);
       expect(game.playerManager.getCount()).toBe(1);
     });
+
+    it('game start returns null game response payload', async () => {
+      expect(game.start().type).toBe('null');
+    });
   });
 
-  describe('event handler', () => {
-    it('event handler map correctly attached', async () => {
+  describe('connecting and disconnecting', () => {
+    it('on add player, event handler map correctly attached', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
       const handleMirror = (event: GameEvent) => {
         event.acknowledger(event.payload);
