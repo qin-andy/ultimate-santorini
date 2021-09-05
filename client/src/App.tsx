@@ -1,12 +1,18 @@
 import React from 'react';
 import { Col, Row, Container } from 'react-bootstrap';
-import './App.css';
-import './bootstrap.min.css';
 
 function App() {
   return (
-    <Container className='d-flex align-items-center'>
-      <Row className='w-100 align-items-center'>
+    <Container fluid className='d-flex align-items-center justify-content-center flex-column'>
+      <Row>
+        <Col className='text-center'>
+          <h1>Hello World!</h1>
+        </Col>
+      </Row>
+      <Row>
+        <Col className='text-center'>
+          <h1>Hello World!</h1>
+        </Col>
         <Col className='text-center'>
           <h1>Hello World!</h1>
         </Col>
