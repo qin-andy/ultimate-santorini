@@ -1,23 +1,26 @@
 import React from 'react';
 import { Col, Row, Container } from 'react-bootstrap';
+import { BrowserRouter, Route, Switch } from 'react-router-dom';
+import HomePage from './pages/HomePage';
+import JoinPage from './pages/JoinPage';
+import CreatePage from './pages/CreatePage';
 
-function App() {
+
+const App = () => {
   return (
-    <Container fluid className='d-flex align-items-center justify-content-center flex-column'>
-      <Row>
-        <Col className='text-center'>
-          <h1>Hello World!</h1>
-        </Col>
-      </Row>
-      <Row>
-        <Col className='text-center'>
-          <h1>Hello World!</h1>
-        </Col>
-        <Col className='text-center'>
-          <h1>Hello World!</h1>
-        </Col>
-      </Row>
-    </Container>
+    <BrowserRouter>
+      <Switch>
+        <Route path="/join">
+          <JoinPage />
+        </Route>
+        <Route path="/create">
+          <CreatePage />
+        </Route>
+        <Route path="/">
+          <HomePage />
+        </Route>
+      </Switch>
+    </BrowserRouter>
   );
 }
 export default App;
