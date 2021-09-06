@@ -1,0 +1,17 @@
+$cell-size: 100px;
+
+.tictactoe-cell {
+  height: $cell-size;
+  width: $cell-size;
+  background-color: ghostwhite;
+
+  P {
+    margin: 0;
+    font-size: calc(#{$cell-size} * 0.8);
+  }
+
+  img {
+    height: $cell-size;
+    width: $cell-size;
+  }
+}
