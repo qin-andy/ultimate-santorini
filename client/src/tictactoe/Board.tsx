@@ -8,7 +8,8 @@ import { ReactElement } from 'react';
 interface BoardProps {
   x: number,
   y: number,
-  data: marking[]
+  data: marking[],
+  onClick: Function
 }
 
 const Board = (props: BoardProps) => {
@@ -18,13 +19,17 @@ const Board = (props: BoardProps) => {
       let cells: ReactElement[] = [];
       for (let j = 0; j < props.x; j++) {
         cells.push(
-          <Col className='p-0'>
-            <Cell marking={props.data[i * props.y + j]}></Cell>
+          <Col key={i * props.y + j} className='p-0'>
+            <Cell
+              marking={props.data[i * props.y + j]}
+              x={j} y={i}
+              onClick={props.onClick}
+            />
           </Col>
         )
       }
       rows.push(
-        <Row className='flex-row'>
+        <Row key={i} className='flex-row'>
           {cells}
         </Row>
       );

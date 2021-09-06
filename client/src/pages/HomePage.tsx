@@ -1,23 +1,34 @@
+import React, { useState } from 'react';
 import { Col, Row } from 'react-bootstrap';
 import LinkButton from '../components/LinkButton';
 import DefaultPage from './DefaultPage';
 import Board from '../tictactoe/Board';
 import { marking } from '../types';
 
-const HomePage = () => {
 
-  let boardData: marking[] = [
+const HomePage = () => {
+  let [board, setBoard] = useState<Array<marking>>([
     'x', 'x', 'o',
     '*', 'x', 'x',
     '*', 'o', 'o'
-  ]
+  ]);
+  let [turn, setTurn] = useState<marking>('o');
+  let boardX = 3;
+  let boardY = 3;
+
+  const markBoard = (x: number, y: number) => {
+    let newBoard = {...board};
+    newBoard[x + y*boardX] = turn;
+    setTurn(turn === 'o' ? 'x' : 'o');
+    setBoard(newBoard);
+  }
 
   return (
     <DefaultPage>
       <Row>
         <Col className='text-center'>
           <h1>Board</h1>
-          <Board data={boardData} x={3} y={3} />
+          <Board data={board} x={boardX} y={boardY} onClick={markBoard} />
           <LinkButton to='/join' variant='outline-primary'>
             Join
           </LinkButton>

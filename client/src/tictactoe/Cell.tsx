@@ -1,7 +1,10 @@
 import { marking } from "../types";
 
 interface CellProps {
-  marking: marking
+  marking: marking,
+  x: number,
+  y: number,
+  onClick: Function,
 }
 
 const Board = (props: CellProps) => {
@@ -9,10 +12,13 @@ const Board = (props: CellProps) => {
   if (props.marking === 'x') {
     svg = <img src='x.svg' alt='x' />;
   } else if (props.marking === 'o') {
-    svg = <img src='o.svg' alt='o'/>;
+    svg = <img src='o.svg' alt='o' />;
   }
   return (
-    <div className='tictactoe-cell'>
+    <div
+      className='tictactoe-cell'
+      onClick={() => props.onClick(props.x, props.y)}
+    >
       {svg}
     </div>
   );
