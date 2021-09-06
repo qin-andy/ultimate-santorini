@@ -4,6 +4,7 @@ import LinkButton from '../components/LinkButton';
 import DefaultPage from './DefaultPage';
 import Board from '../tictactoe/Board';
 import { marking } from '../types';
+import socket from '../services/socket';
 
 
 const HomePage = () => {
@@ -22,6 +23,8 @@ const HomePage = () => {
     setTurn(turn === 'o' ? 'x' : 'o');
     setBoard(newBoard);
   }
+
+  console.log(socket.connected);
 
   return (
     <DefaultPage>

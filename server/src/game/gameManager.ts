@@ -7,15 +7,16 @@ export class GameManager {
   gamesMap: Map<string, Game>;
   playersMap: Map<string, Player>;
   io: Server;
-  constructor(io: Server) {
+  constructor(io: Server, dev: boolean = false) {
     this.io = io;
     this.gamesMap = new Map<string, Game>();
     this.playersMap = new Map<string, Player>();
-    this.attachListeners(io);
+    this.attachListeners(io, dev);
   }
 
-  attachListeners(io: Server) {
+  attachListeners(io: Server, dev: boolean = false) {
     io.on('connect', (socket) => {
+      if(dev) console.log(`${socket.id} connected!`);
       this.playersMap.set(socket.id, new Player(socket, 'New Player'));
 
       socket.on('ping', (acknowledger: Function) => {
@@ -53,6 +54,7 @@ export class GameManager {
       });
 
       socket.on('disconnect', () => {
+        if(dev) console.log(`${socket.id} disconnected!`);
         // game removal handled in playerManagement class
         this.playersMap.delete(socket.id);
       });
