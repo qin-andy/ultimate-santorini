@@ -129,5 +129,38 @@ describe('game class tests', () => {
       });
       expect(await mirrorPromise).toBe('test message');
     });
+
+    it('added players join socket room and recieve room emits', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      let pingRoomRecievedPromised = new Promise<string>(resolve => {
+        clientSockets[1].once('ping room', payload => {
+          resolve(payload);
+        });
+      });
+      let pingRoomPromise = new Promise<string>(resolve => {
+        let payload = 'test message';
+        clientSockets[0].emit('game action', 'ping room', payload, resolve);
+      });
+      await pingRoomPromise;
+      expect(await pingRoomRecievedPromised).toBe(clientSockets[0].id + ': test message');
+    });
+
+    it.only('removed players leave socket room and do not recieve room emits', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      let pingRoomRecievedPromised = new Promise<string>((resolve, reject) => {
+        let timeout = setTimeout(() => resolve('no message'), 300);
+        clientSockets[1].once('ping room', payload => {
+          clearTimeout(timeout);
+          resolve(payload);
+        });
+      });
+      game.removePlayer(clientSockets[1].id);
+      let pingRoomPromise = new Promise<string>(resolve => {
+        let payload = 'test message';
+        clientSockets[0].emit('game action', 'ping room', payload, resolve);
+      });
+      await pingRoomPromise;
+      expect(await pingRoomRecievedPromised).toBe('no message');
+    });
   });
 });

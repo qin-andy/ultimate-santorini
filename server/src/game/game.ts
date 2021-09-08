@@ -21,6 +21,7 @@ export class Game {
     this.running = false;
     this.eventHandlerMap = new Map<string, Function>(); // event name to callback
     this.teamMap = new Map<string, string>(); // id to team
+    this.initializeHandlers();
   }
 
   initializeHandlers() {
@@ -31,6 +32,14 @@ export class Game {
     // }
 
     // this.eventHandlerMap.set('mirror', handleMirror);
+
+    const pingRoom = (event: GameEvent) => {
+      let fromPlayer = this.playerManager.getPlayerById(event.id)
+      fromPlayer?.socket.to(this.roomId).emit('ping room', fromPlayer.id + ': ' + event.payload);
+      event.acknowledger(true);
+    }
+
+    this.eventHandlerMap.set('ping room', pingRoom);
   }
 
   handleEvent(event: GameEvent) {
@@ -55,8 +64,9 @@ export class Game {
   }
 
   removePlayer(id: string): Player | undefined {
-    // TODO win chekcing TODO clear team map and clean all references
+    // To be extended by children for additional behaviors on player disconnects
     let player = this.playerManager.getPlayerById(id);
+    player?.socket.leave(this.roomId);
     if (player) player.currentGame = null;
     return this.playerManager.removePlayer(id);
   }

@@ -12,7 +12,6 @@ export class TicTacToeGame extends Game {
     this.turn = '*';
     this.board = [];
     this.dimensions = [0, 0];
-    this.initializeHandlers();
   }
 
   initializeHandlers() {
@@ -209,12 +208,6 @@ export class TicTacToeGame extends Game {
   }
 
   end() {
-    this.turn = '*';
-    this.board = [
-      '*', '*', '*',
-      '*', '*', '*',
-      '*', '*', '*'
-    ];
     this.running = false;
   }
 }
