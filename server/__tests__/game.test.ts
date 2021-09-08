@@ -76,6 +76,19 @@ describe('game class tests', () => {
       expect(game.playerManager.getNames()).toEqual(expect.arrayContaining(expectedPlayerNames));
     });
 
+    it('on add player, current game is updated', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+      const handleMirror = (event: GameEvent) => {
+        event.acknowledger(event.payload);
+      }
+      game.eventHandlerMap.set('mirror test', handleMirror);
+      let mirrorPromise = new Promise<string>((resolve) => {
+        let payload = 'test message';
+        clientSockets[0].emit('game action', 'mirror test', payload, resolve);
+      });
+      expect(await mirrorPromise).toBe('test message');
+    });
+
     it('after add add remove player, game playerManager has correct info 2', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 3);
       game.removePlayer(players[0].id);
@@ -117,17 +130,13 @@ describe('game class tests', () => {
       expect(await mirrorPromise).toBe('test message');
     });
 
-    it('on add player, current game is updated', async () => {
+    it('on add player, example event handlers attached (initalizeHandlers called)', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
-      const handleMirror = (event: GameEvent) => {
-        event.acknowledger(event.payload);
-      }
-      game.eventHandlerMap.set('mirror test', handleMirror);
-      let mirrorPromise = new Promise<string>((resolve) => {
-        let payload = 'test message';
-        clientSockets[0].emit('game action', 'mirror test', payload, resolve);
+      let mirrorPromise = new Promise<GameResponse>((resolve) => {
+        let payload = 'test message mirror';
+        clientSockets[0].emit('game action', 'mirror', payload, resolve);
       });
-      expect(await mirrorPromise).toBe('test message');
+      expect((await mirrorPromise).payload).toBe('test message mirror');
     });
 
     it('added players join socket room and recieve room emits', async () => {
@@ -145,9 +154,9 @@ describe('game class tests', () => {
       expect(await pingRoomRecievedPromised).toBe(clientSockets[0].id + ': test message');
     });
 
-    it.only('removed players leave socket room and do not recieve room emits', async () => {
+    it('removed players leave socket room and do not recieve room emits', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
-      let pingRoomRecievedPromised = new Promise<string>((resolve, reject) => {
+      let pingRoomRecievedPromised = new Promise<string>((resolve) => {
         let timeout = setTimeout(() => resolve('no message'), 300);
         clientSockets[1].once('ping room', payload => {
           clearTimeout(timeout);
@@ -161,6 +170,20 @@ describe('game class tests', () => {
       });
       await pingRoomPromise;
       expect(await pingRoomRecievedPromised).toBe('no message');
+    });
+
+    it('removed players have game action listener removed', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      game.removePlayer(clientSockets[1].id);
+      let mirrorPromise = new Promise<string>(resolve => {
+        let payload = 'test message';
+        let timeout = setTimeout(() => resolve('no message'), 300);
+        clientSockets[1].emit('game action', 'mirror', payload, (message: GameResponse) => {
+          clearTimeout(timeout);
+          resolve(message.payload);
+        });
+      });
+      expect(await mirrorPromise).toBe('no message');
     });
   });
 });

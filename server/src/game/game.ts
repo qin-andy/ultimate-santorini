@@ -25,13 +25,10 @@ export class Game {
   }
 
   initializeHandlers() {
-    // default handlers
-    // EXAMPLE:
-    // const handleMirror = (event: any) => {
-    //   event.acknowledger(event);
-    // }
-
-    // this.eventHandlerMap.set('mirror', handleMirror);
+    // default handlers for testing
+    const handleMirror = (event: any) => {
+      event.acknowledger(event);
+    }
 
     const pingRoom = (event: GameEvent) => {
       let fromPlayer = this.playerManager.getPlayerById(event.id)
@@ -39,6 +36,7 @@ export class Game {
       event.acknowledger(true);
     }
 
+    this.eventHandlerMap.set('mirror', handleMirror);
     this.eventHandlerMap.set('ping room', pingRoom);
   }
 
@@ -67,6 +65,7 @@ export class Game {
     // To be extended by children for additional behaviors on player disconnects
     let player = this.playerManager.getPlayerById(id);
     player?.socket.leave(this.roomId);
+    player?.socket.removeAllListeners('game action');
     if (player) player.currentGame = null;
     return this.playerManager.removePlayer(id);
   }
