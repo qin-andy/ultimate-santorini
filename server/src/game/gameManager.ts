@@ -103,17 +103,17 @@ export class GameManager {
         }
       });
 
-      socket.on('create game', (gameId: string, type: string = '', acknowledger: Function) => {
+      socket.on('create game', (name: string, type: string = '', acknowledger: Function) => {
         let player = this.playersMap.get(socket.id);
-        if (!this.gamesMap.has(gameId) && player && !player?.inGame) {
+        if (!this.gamesMap.has(name) && player && !player?.inGame) {
           player.inGame = true;
           let game: Game;
           if (type === 'tictactoe') {
-            game = new TicTacToeGame(gameId, io)
+            game = new TicTacToeGame(name, io)
           } else {
-            game = new Game(gameId, io)
+            game = new Game(name, io)
           }
-          this.gamesMap.set(gameId, game);
+          this.gamesMap.set(name, game);
           game.addPlayer(player);
           acknowledger(true);
         } else {
