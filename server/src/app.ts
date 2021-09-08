@@ -15,6 +15,6 @@ app.get('/', (req, res) => {
   res.send("Hello, world!");
 });
 
-let gameManager = new GameManager(io, true);
+let gameManager = new GameManager(io);
 
 export default server;

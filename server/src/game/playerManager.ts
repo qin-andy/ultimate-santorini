@@ -9,21 +9,15 @@ export class PlayerManager {
 
   addPlayer(player: Player): Player {
     if (this.playerMap.has(player.id)) throw Error('Player already exists!');
-
     this.playerMap.set(player.id, player);
-    player.socket.on('disconnect', () => {
-      this.removePlayer(player.id);
-    });
     return player;
   }
 
-  removePlayer(id: string): Player {
-    let removedPlayer: Player;
-    removedPlayer = this.getPlayerById(id);
+  removePlayer(id: string) {
+    let player: Player | undefined = undefined
+    player = this.playerMap.get(id);
     this.playerMap.delete(id);
-    removedPlayer.socket.removeAllListeners();
-    removedPlayer.socket.disconnect();
-    return removedPlayer;
+    return player;
   }
 
   getIds(): string[] {
@@ -40,18 +34,15 @@ export class PlayerManager {
     return this.playerMap.size;
   }
 
-  getPlayerById(id: string): Player {
+  getPlayerById(id: string): Player | undefined {
     let player = this.playerMap.get(id);
     if (player) {
       return player;
     }
-    throw Error('player does not exist!');
+    return undefined;
   }
 
   close(): void {
-    this.playerMap.forEach(player => {
-      player.socket.disconnect();
-    });
     this.playerMap.clear();
   }
 }

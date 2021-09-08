@@ -10,14 +10,14 @@ export class GameManager {
   queueLoopId: NodeJS.Timer;
 
   io: Server;
-  constructor(io: Server, dev: boolean = false) {
+  constructor(io: Server) {
     this.io = io;
     this.gamesMap = new Map<string, Game>();
     this.playersMap = new Map<string, Player>();
     this.matchmakingQueue = [];
 
     this.queueLoopId = this.startQueueLoop();
-    this.attachListeners(io, dev);
+    this.attachListeners(io);
   }
 
   startQueueLoop(time: number = 10000) {
@@ -57,7 +57,6 @@ export class GameManager {
 
   attachListeners(io: Server, dev: boolean = false) {
     io.on('connect', (socket) => {
-      if(dev) console.log(`${socket.id} connected!`);
       this.playersMap.set(socket.id, new Player(socket, 'New Player'));
 
       socket.on('ping', (acknowledger: Function) => {
@@ -110,10 +109,13 @@ export class GameManager {
       });
 
       socket.on('disconnect', () => {
-        if(dev) console.log(`${socket.id} disconnected!`);
         // game removal handled in playerManagement class
         let index = this.matchmakingQueue.indexOf(socket.id);
-        this.matchmakingQueue.splice(index, 1);
+        if (index !== -1) {
+          this.matchmakingQueue.splice(index, 1);
+        }
+        socket.removeAllListeners();
+        this.playersMap.get(socket.id)?.currentGame?.removePlayer(socket.id);
         this.playersMap.delete(socket.id);
       });
     });

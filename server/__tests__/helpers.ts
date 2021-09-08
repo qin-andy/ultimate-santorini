@@ -4,18 +4,6 @@ import { AddressInfo } from 'net';
 import Client, { Socket as ClientSocket } from 'socket.io-client';
 import { Server, Socket as ServerSocket } from 'socket.io';
 
-export const createClientSockets = async(port: number, count: number) => {
-  let connectPromises: Array<Promise<ClientSocket>> = [];
-  for (let i = 0; i < count; i++) {
-    let clientConnectPromise = new Promise<ClientSocket>((resolve) => {
-      let clientSocket = Client(`http://localhost:${port}`);
-      clientSocket.once('connect', () => resolve(clientSocket));
-    });
-    connectPromises.push(clientConnectPromise);
-  };
-  return await Promise.all(connectPromises);
-}
-
 // For when access to server sockets is necessary
 export const createSocketPairs = async (io: Server, port: number, count: number) => {
   let clientSockets: ClientSocket[] = [];

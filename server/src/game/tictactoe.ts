@@ -33,17 +33,6 @@ export class TicTacToeGame extends Game {
      super.handleEvent(event);
   }
 
-  end() {
-    super.end();
-    this.turn = '*';
-    this.board = [
-      '*', '*', '*',
-      '*', '*', '*',
-      '*', '*', '*'
-    ];
-    this.running = false;
-  }
-
   // tic tac toe logic
   start(x = 3, y = 3): GameResponse {
     if (this.playerManager.getCount() !== 2) {
@@ -217,5 +206,15 @@ export class TicTacToeGame extends Game {
       }
     }
     return false;
+  }
+
+  end() {
+    this.turn = '*';
+    this.board = [
+      '*', '*', '*',
+      '*', '*', '*',
+      '*', '*', '*'
+    ];
+    this.running = false;
   }
 }

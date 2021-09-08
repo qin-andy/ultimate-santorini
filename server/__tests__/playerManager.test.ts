@@ -2,7 +2,7 @@ import { Server, Socket as ServerSocket } from 'socket.io';
 import { Socket as ClientSocket } from 'socket.io-client';
 import { PlayerManager } from "../src/game/PlayerManager";
 import { Player } from '../src/game/player';
-import { createClientSockets, createSocketPairs, createSocketServer } from './helpers';
+import { createSocketPairs, createSocketServer } from './helpers';
 
 describe('player manager tests', () => {
   const IN_BETWEEN_DELAY = 25;
@@ -72,7 +72,7 @@ describe('player manager tests', () => {
     it('get player by socket id returns correct player and socket', () => {
       clientSockets.forEach((clientSocket, index) => {
         let player = playerManager.getPlayerById(clientSocket.id);
-        expect(player.id).toBe(clientSocket.id);
+        expect(player?.id).toBe(clientSocket.id);
       });
     });
   });
@@ -83,8 +83,8 @@ describe('player manager tests', () => {
     });
 
     it('add new players get names returns new ids', async () => {
-      let newClientSocket = (await createClientSockets(port, 1))[0];
-      clientSockets.push(newClientSocket);
+      let [newClientSocket, newServerSocket] = await createSocketPairs(io, port, 1);
+      clientSockets.push(newClientSocket[0]);
       let expectedIds = clientSockets.map((socket) => {
         return socket.id;
       });
@@ -108,24 +108,26 @@ describe('player manager tests', () => {
       expect(playerManager.getIds()).toEqual(expect.arrayContaining(expectedIds));
     });
 
-    it('remove first player twice throws error', () => {
+    it('remove first player returns player with correct nfo', () => {
+      let player = playerManager.removePlayer(clientSockets[0].id);
+      if (!player) {
+        throw new Error('player is undefined!');
+      }
+      expect(player.id).toBe(clientSockets[0].id);
+    });
+
+    it('remove first player gives undefined second time', () => {
       playerManager.removePlayer(clientSockets[0].id);
-      expect(() => playerManager.removePlayer(clientSockets[0].id)).toThrowError();
+      expect(playerManager.removePlayer(clientSockets[0].id)).toBe(undefined);
     });
 
-    it('get nonexisent player throws error', () => {
-      expect(() => playerManager.getPlayerById('invalid player name')).toThrowError();
+    it('get nonexisent player gives undefined', () => {
+      expect(playerManager.getPlayerById('invalid player name')).toBe(undefined);
     });
 
-    it('remove nonexistaent player throws error', () => {
-      expect(() => playerManager.removePlayer('invalid player name')).toThrowError();
+    it('remove nonexistaent player gives undefined', () => {
+      expect(playerManager.removePlayer('invalid player name')).toBe(undefined);
     });
 
-    it('disconnect removes player', async () => {
-      clientSockets[0].disconnect();
-      expect(playerManager.playerMap.get(clientSockets[0].id)).toBe(undefined);
-    });
-
-    // TODO : Closing functionality
   });
 });

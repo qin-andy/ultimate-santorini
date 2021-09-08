@@ -144,6 +144,31 @@ describe('game manager tests', () => {
       expect(await pingPromiseFactory(clientSockets[2])).toBe('pong');
       expect(await pingPromiseFactory(clientSockets[3])).toBe('pong');
     });
+
+    it('player disconnect removes them from their current game', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      let newGame = new Game('new game', io);
+      gameManager.gamesMap.set(newGame.name, newGame);
+      let player1 = gameManager.playersMap.get(clientSockets[0].id);
+      let player2 = gameManager.playersMap.get(clientSockets[1].id);
+      if (!player1 || !player2) {
+        throw new Error('players not tracked by gamemanager playersmap!');
+      }
+      newGame.addPlayer(player1);
+      newGame.addPlayer(player2);
+      expect(newGame.playerManager.getIds()).toStrictEqual(expect.arrayContaining([player1.id, player2.id]));
+      player1.socket.disconnect();
+      expect(newGame.playerManager.getIds()).toStrictEqual(expect.arrayContaining([player2.id]));
+      player2.socket.disconnect();
+      expect(newGame.playerManager.getIds()).toStrictEqual(expect.arrayContaining([]));
+
+    });
+
+    it('player disconnect removes them from playermap', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      clientSockets[0].disconnect();
+      expect(gameManager.playersMap.has(clientSockets[0].id)).toBe(false);
+    });
   });
 
   describe('event create game', () => {

@@ -50,11 +50,15 @@ export class Game {
       };
       this.handleEvent(event);
     });
+    player.currentGame = this;
     this.playerManager.addPlayer(player);
   }
 
-  removePlayer(player: Player) {
-    return this.playerManager.removePlayer(player.id);
+  removePlayer(id: string): Player | undefined {
+    // TODO win chekcing TODO clear team map and clean all references
+    let player = this.playerManager.getPlayerById(id);
+    if (player) player.currentGame = null;
+    return this.playerManager.removePlayer(id);
   }
 
   start(): GameResponse {

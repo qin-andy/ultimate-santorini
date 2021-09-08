@@ -3,7 +3,7 @@ import { Socket as ClientSocket } from 'socket.io-client';
 import { Game } from '../src/game/game';
 import { Player } from '../src/game/player';
 import { GameEvent, GameResponse } from '../src/types/types';
-import { createClientSockets, createSocketPairs, createSocketServer } from './helpers';
+import { createSocketPairs, createSocketServer } from './helpers';
 
 describe('game class tests', () => {
   const CLIENTS_COUNT = 5;
@@ -58,6 +58,11 @@ describe('game class tests', () => {
       expect(game.name).toBe('Test Game 1');
     });
 
+    it('after add player, player\'s current game references correct game', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 3);
+      expect(players[0].currentGame).toStrictEqual(game);
+    });
+
     it('after add player, game playerManager has correct info 1', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 3);
       expect(game.playerManager.getCount()).toBe(3);
@@ -73,10 +78,24 @@ describe('game class tests', () => {
 
     it('after add add remove player, game playerManager has correct info 2', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 3);
-      game.removePlayer(players[0]);
-      game.removePlayer(players[1]);
+      game.removePlayer(players[0].id);
+      game.removePlayer(players[1].id);
       expect(game.playerManager.getNames()[0]).toEqual(players[2].name);
       expect(game.playerManager.getCount()).toBe(1);
+    });
+
+    it('remove player returns removed player', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 3);
+      let removedPlayer = game.removePlayer(players[0].id);
+      if (!removedPlayer) throw new Error('player doesn\'t exist in game!');
+      expect(removedPlayer).toStrictEqual(players[0]);
+    });
+
+    it('remove player sets removed player\'s current game to null', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 3);
+      let removedPlayer = game.removePlayer(players[0].id);
+      if (!removedPlayer) throw new Error('player doesn\'t exist in game!');
+      expect(removedPlayer.currentGame).toBe(null);
     });
 
     it('game start returns null game response payload', async () => {
@@ -86,6 +105,19 @@ describe('game class tests', () => {
 
   describe('connecting and disconnecting', () => {
     it('on add player, event handler map correctly attached', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+      const handleMirror = (event: GameEvent) => {
+        event.acknowledger(event.payload);
+      }
+      game.eventHandlerMap.set('mirror test', handleMirror);
+      let mirrorPromise = new Promise<string>((resolve) => {
+        let payload = 'test message';
+        clientSockets[0].emit('game action', 'mirror test', payload, resolve);
+      });
+      expect(await mirrorPromise).toBe('test message');
+    });
+
+    it('on add player, current game is updated', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
       const handleMirror = (event: GameEvent) => {
         event.acknowledger(event.payload);
