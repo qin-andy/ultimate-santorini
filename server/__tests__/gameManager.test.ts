@@ -89,6 +89,16 @@ describe('game manager tests', () => {
     return updatePromise;
   }
 
+  let queuePromiseFactory = (clientSocket: ClientSocket) => {
+    return new Promise<boolean>((resolve, reject) => {
+      let timeout = setTimeout(() => reject('timeout'), 200);
+      clientSocket.emit('join queue', (response: boolean) => {
+        clearInterval(timeout);
+        resolve(response);
+      });
+    });
+  }
+
   describe('constructor', () => {
     it('maps are initialized empty', async () => {
       expect(gameManager.gamesMap.size).toBe(0);
@@ -276,6 +286,194 @@ describe('game manager tests', () => {
     });
   });
 
+  describe('matchmatking queue', () => {
+    // EVENT TESTS
+    it('new player join queue acknowledges true', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+      let acknowledgment = await queuePromiseFactory(clientSockets[0]);
+      expect(acknowledgment).toBe(true);
+    });
+
+    it('player join queue has id added to queue', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+      await queuePromiseFactory(clientSockets[0]);
+      expect(gameManager.matchmakingQueue[0]).toBe(clientSockets[0].id);
+    });
+
+    it('player join queue has inGame property set to true', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+      await queuePromiseFactory(clientSockets[0]);
+      let player = gameManager.playersMap.get(clientSockets[0].id);
+      if (!player) {
+        throw new Error('Player doesn\'t exist!');
+      }
+      expect(player.inGame).toBe(true);
+    });
+
+    it('player with ingame as false attempt join queue acknokwledges fast', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+      let player = gameManager.playersMap.get(clientSockets[0].id);
+      if (!player) {
+        throw new Error('Player doesn\'t exist!');
+      }
+      player.inGame = true;
+      let acknowledgment = await queuePromiseFactory(clientSockets[0]);
+      expect(gameManager.matchmakingQueue.length).toBe(0);
+      expect(acknowledgment).toBe(false);
+    });
+
+    it('player no int playermap attempt join queue acknokwledges fast', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+      gameManager.playersMap.delete(clientSockets[0].id);
+      let acknowledgment = await queuePromiseFactory(clientSockets[0]);
+      expect(gameManager.matchmakingQueue.length).toBe(0);
+      expect(acknowledgment).toBe(false);
+    });
+
+    it('player disconnect removes them from queue', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+      await queuePromiseFactory(clientSockets[0]);
+      expect(gameManager.matchmakingQueue[0]).toBe(clientSockets[0].id);
+      clientSockets[0].disconnect();
+      await sleepFactory(200);
+      expect(gameManager.matchmakingQueue.length).toBe(0);
+    });
+
+    // MATCHMAKE PLAYERS IN QUEUE TESTS
+    // matchmake queue returns true if both players exist, are connected, and not ingame
+    it('matchmake queue returns true if both players exist, are connected, and not ingame', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      gameManager.matchmakingQueue.push(clientSockets[0].id);
+      gameManager.matchmakingQueue.push(clientSockets[1].id);
+      expect(gameManager.matchmakePlayersInQueue()).toBe(true);
+    });
+
+    it('matchmake queue creates new game in gamesMap with name as the player ids concatted', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      gameManager.matchmakingQueue.push(clientSockets[0].id);
+      gameManager.matchmakingQueue.push(clientSockets[1].id);
+      gameManager.matchmakePlayersInQueue();
+      expect(gameManager.gamesMap.has(clientSockets[0].id + clientSockets[1].id)).toBe(true);
+    });
+
+    it.todo('Matchmake queue starts new game');
+
+    it('matchmake queue removes both players from queue if successful', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      gameManager.matchmakingQueue.push(clientSockets[0].id);
+      gameManager.matchmakingQueue.push(clientSockets[1].id);
+      gameManager.matchmakePlayersInQueue();
+      expect(gameManager.matchmakingQueue).toStrictEqual([]);
+    });
+
+    // matchmake queue returns false if less than 2 players
+    it('matchmake queue returns false if less than 2 players', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      expect(gameManager.matchmakePlayersInQueue()).toBe(false);
+      gameManager.matchmakingQueue.push(clientSockets[0].id);
+      expect(gameManager.matchmakePlayersInQueue()).toBe(false);
+
+    });
+    // matchmake queue returns false if player 1 doesnt exist in playersmap
+    it('matchmake queue returns false if player 1 doesnt exist in playersMap', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      gameManager.matchmakingQueue.push(clientSockets[0].id);
+      gameManager.matchmakingQueue.push(clientSockets[1].id);
+      gameManager.playersMap.delete(clientSockets[0].id);
+      expect(gameManager.matchmakePlayersInQueue()).toBe(false);
+    });
+
+    // matchmake queue returns false if player 1 is disconnected
+    it('matchmake queue returns false if player 1 is disconnected', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      gameManager.matchmakingQueue.push(clientSockets[0].id);
+      gameManager.matchmakingQueue.push(clientSockets[1].id);
+      serverSockets[0].disconnect(); // not sure why doesn't clientSockets[0].disconnect work?
+      sleepFactory(200);
+      expect(gameManager.matchmakePlayersInQueue()).toBe(false);
+    });
+
+    // matchmake queue returns false if player 1 is inGame
+    it('matchmake queue returns false if player 1 is inGame', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      gameManager.matchmakingQueue.push(clientSockets[0].id);
+      gameManager.matchmakingQueue.push(clientSockets[1].id);
+      let player1 = gameManager.playersMap.get(clientSockets[0].id);
+      if (!player1) {
+        throw new Error('player does not exist!');
+      }
+      player1.inGame = true;
+      expect(gameManager.matchmakePlayersInQueue()).toBe(false);
+    });
+
+    // matchmake queue returns false if player 2 doesn't exist in playersmap
+    it('matchmake queue returns false if player 2 doesnt exist in playersMap', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      gameManager.matchmakingQueue.push(clientSockets[0].id);
+      gameManager.matchmakingQueue.push(clientSockets[1].id);
+      gameManager.playersMap.delete(clientSockets[1].id);
+      expect(gameManager.matchmakePlayersInQueue()).toBe(false);
+    });
+
+    // matchmake queue returns false if player 2 is disconnected
+    it('matchmake queue returns false if player 2 is disconnected', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      gameManager.matchmakingQueue.push(clientSockets[0].id);
+      gameManager.matchmakingQueue.push(clientSockets[1].id);
+      serverSockets[1].disconnect(); // not sure why doesn't clientSockets[0].disconnect work?
+      sleepFactory(200);
+      expect(gameManager.matchmakePlayersInQueue()).toBe(false);
+    });
+
+    // matchmake queue returns false if player 2 is inGame
+    it('matchmake queue returns false if player 2 is inGame', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      gameManager.matchmakingQueue.push(clientSockets[0].id);
+      gameManager.matchmakingQueue.push(clientSockets[1].id);
+      let player2 = gameManager.playersMap.get(clientSockets[1].id);
+      if (!player2) {
+        throw new Error('player does not exist!');
+      }
+      player2.inGame = true;
+      expect(gameManager.matchmakePlayersInQueue()).toBe(false);
+    });
+
+    // matchmake queue readds player 1 if player 2 doesn't exist in playersmap
+    it('matchmake queue returns false if player 2 doesnt exist in playersMap', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      gameManager.matchmakingQueue.push(clientSockets[0].id);
+      gameManager.matchmakingQueue.push(clientSockets[1].id);
+      gameManager.playersMap.delete(clientSockets[1].id);
+      expect(gameManager.matchmakePlayersInQueue()).toBe(false);
+      expect(gameManager.matchmakingQueue).toStrictEqual([clientSockets[0].id]);
+    });
+
+    // matchmake queue readds player 1 if player 2 is disconnected
+    it('matchmake queue returns false if player 2 is disconnected', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      gameManager.matchmakingQueue.push(clientSockets[0].id);
+      gameManager.matchmakingQueue.push(clientSockets[1].id);
+      serverSockets[1].disconnect(); // not sure why doesn't clientSockets[0].disconnect work?
+      sleepFactory(200);
+      expect(gameManager.matchmakePlayersInQueue()).toBe(false);
+      expect(gameManager.matchmakingQueue).toStrictEqual([clientSockets[0].id]);
+    });
+
+    // matchmake queue readds player 1 if player 2 is inGame
+    it('matchmake queue returns false if player 2 is inGame', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      gameManager.matchmakingQueue.push(clientSockets[0].id);
+      gameManager.matchmakingQueue.push(clientSockets[1].id);
+      let player2 = gameManager.playersMap.get(clientSockets[1].id);
+      if (!player2) {
+        throw new Error('player does not exist!');
+      }
+      player2.inGame = true;
+      expect(gameManager.matchmakePlayersInQueue()).toBe(false);
+      expect(gameManager.matchmakingQueue).toStrictEqual([clientSockets[0].id]);
+    });
+  });
+
   describe('closing', () => {
     it('closing disconnects all sockets', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 4);
@@ -316,7 +514,7 @@ describe('game manager tests', () => {
       expect(pingPromise).rejects.toBe('timeout');
     });
 
-    it('closing gamemanager closes all games', async () => {
+    it('closing closes all games', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 6);
       await createGameFactory(clientSockets[0], 'Game 1', 'tictactoe');
       await joinGameFactory(clientSockets[1], 'Game 1');
@@ -340,6 +538,18 @@ describe('game manager tests', () => {
       expect(game2?.running).toBe(false);
       expect(game3?.running).toBe(false);
     });
+
+    it('closing clears queue', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+      await queuePromiseFactory(clientSockets[0]);
+      expect(gameManager.matchmakingQueue[0]).toBe(clientSockets[0].id);
+      gameManager.close();
+      await sleepFactory(200);
+      expect(gameManager.matchmakingQueue).toStrictEqual([]);
+    });
+
+    it.todo('closing clears queue matchmaking loop');
   });
 
   describe('concurrent tictactoe games with multiple sockets', () => {

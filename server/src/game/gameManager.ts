@@ -6,12 +6,55 @@ import { Server } from 'socket.io';
 export class GameManager {
   gamesMap: Map<string, Game>;
   playersMap: Map<string, Player>;
+  matchmakingQueue: Array<string>;
+  queueLoopId: NodeJS.Timer;
+
   io: Server;
   constructor(io: Server, dev: boolean = false) {
     this.io = io;
     this.gamesMap = new Map<string, Game>();
     this.playersMap = new Map<string, Player>();
+    this.matchmakingQueue = [];
+
+    this.queueLoopId = this.startQueueLoop();
     this.attachListeners(io, dev);
+  }
+
+  startQueueLoop(time: number = 10000) {
+    let timer = setInterval(() => {
+      // this.matchmakePlayersInQueue();
+    }, time);
+    return timer;
+  }
+
+  matchmakePlayersInQueue(): boolean {
+    if (this.matchmakingQueue.length >= 2) {
+      let player1id = this.matchmakingQueue.shift();
+      if (!player1id) return false;
+      let player1 = this.playersMap.get(player1id);
+      if (!player1 || !player1.socket.connected || player1.inGame) return false;
+
+      let player2id = this.matchmakingQueue.shift();
+      if (!player2id) {
+        this.matchmakingQueue.push(player1id);
+        return false;
+      }
+      let player2 = this.playersMap.get(player2id);
+      if (!player2 || !player2.socket.connected || player2.inGame) {
+        this.matchmakingQueue.push(player1id);
+        return false;
+      }
+
+      let newGame = new TicTacToeGame(player1id + player2id, this.io);
+      player1.inGame = true;
+      player2.inGame = true;
+      newGame.addPlayer(player1);
+      newGame.addPlayer(player2);
+      newGame.start(); // TODO : someone might join the game by chance before game start?
+      this.gamesMap.set(newGame.name, newGame);
+      return true;
+    }
+    return false;
   }
 
   attachListeners(io: Server, dev: boolean = false) {
@@ -21,6 +64,21 @@ export class GameManager {
 
       socket.on('ping', (acknowledger: Function) => {
         acknowledger('pong');
+      });
+
+      socket.on('join queue', (acknowledger: Function) => {
+        let player = this.playersMap.get(socket.id);
+        if (player) {
+          if (!player.inGame) {
+            player.inGame = true;
+            this.matchmakingQueue.push(player.id);
+            acknowledger(true);
+          } else {
+            acknowledger(false);
+          }
+        } else {
+          acknowledger(false);
+        }
       });
 
       socket.on('join game', (gameId: string, acknowledger: Function) => {
@@ -56,6 +114,8 @@ export class GameManager {
       socket.on('disconnect', () => {
         if(dev) console.log(`${socket.id} disconnected!`);
         // game removal handled in playerManagement class
+        let index = this.matchmakingQueue.indexOf(socket.id);
+        this.matchmakingQueue.splice(index, 1);
         this.playersMap.delete(socket.id);
       });
     });
@@ -70,6 +130,8 @@ export class GameManager {
     });
     this.gamesMap.clear();
     this.playersMap.clear();
+    this.matchmakingQueue = [];
+    clearInterval(this.queueLoopId);
     this.io.removeAllListeners();
   }
 }
