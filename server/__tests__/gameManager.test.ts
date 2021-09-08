@@ -169,6 +169,21 @@ describe('game manager tests', () => {
       clientSockets[0].disconnect();
       expect(gameManager.playersMap.has(clientSockets[0].id)).toBe(false);
     });
+
+    it('player disconnect closes current game if they are the last one in game', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      let player1 = gameManager.playersMap.get(clientSockets[0].id);
+      let player2 = gameManager.playersMap.get(clientSockets[1].id);
+      if (!player1 || !player2) throw new Error('player not added to gameManager correctly!');
+      let newGame = new Game('new game', io, this);
+      gameManager.gamesMap.set(newGame.name, newGame);
+      newGame.addPlayer(player1);
+      newGame.addPlayer(player2);
+      player1.socket.disconnect();
+      expect(gameManager.gamesMap.has(newGame.name)).toBe(true);
+      player2.socket.disconnect();
+      expect(gameManager.gamesMap.has(newGame.name)).toBe(false);
+    });
   });
 
   describe('event create game', () => {
@@ -517,7 +532,51 @@ describe('game manager tests', () => {
     });
   });
 
-  describe('closing', () => {
+  describe('close game', () => {
+    it('close game updates player ingame to false', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      let player1 = gameManager.playersMap.get(clientSockets[0].id);
+      let player2 = gameManager.playersMap.get(clientSockets[1].id);
+      if (!player1 || !player2) throw new Error('player not added to gameManager correctly!');
+      let newGame = new Game('new game', io, this);
+      gameManager.gamesMap.set(newGame.name, newGame);
+      newGame.addPlayer(player1);
+      newGame.addPlayer(player2);
+      expect(player1.inGame).toBe(true);
+      expect(player2.inGame).toBe(true);
+      gameManager.closeGame(newGame);
+      expect(player1.inGame).toBe(false);
+      expect(player2.inGame).toBe(false);
+    });
+
+    it('close game updates player currentgame to null', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      let player1 = gameManager.playersMap.get(clientSockets[0].id);
+      let player2 = gameManager.playersMap.get(clientSockets[1].id);
+      if (!player1 || !player2) throw new Error('player not added to gameManager correctly!');
+      let newGame = new Game('new game', io, this);
+      gameManager.gamesMap.set(newGame.name, newGame);
+
+      newGame.addPlayer(player1);
+      newGame.addPlayer(player2);
+      expect(player1.currentGame).toBe(newGame);
+      expect(player2.currentGame).toBe(newGame);
+      gameManager.closeGame(newGame);
+      expect(player2.currentGame).toBe(null);
+      expect(player1.currentGame).toBe(null);
+    });
+
+    it('close game deletes game from gamesmap', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      let newGame = new Game('new game', io, this);
+      gameManager.gamesMap.set(newGame.name, newGame);
+      gameManager.closeGame(newGame);
+      expect(gameManager.gamesMap.has(newGame.name)).toBe(false);
+
+    });
+  });
+
+  describe('close self', () => {
     it('closing disconnects all sockets', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 4);
       gameManager.close();

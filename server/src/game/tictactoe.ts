@@ -1,14 +1,15 @@
 import { Game } from "./game";
 import { Server } from 'socket.io';
 import { GameEvent, GameResponse } from "../types/types";
+import { GameManager } from "./gameManager";
 
 export class TicTacToeGame extends Game {
   turn: string;
   board: Array<string>;
   dimensions: [x: number, y: number];
 
-  constructor(name: string, io: Server) {
-    super(name, io);
+  constructor(name: string, io: Server, gameManager?: GameManager) {
+    super(name, io, gameManager);
     this.turn = '*';
     this.board = [];
     this.dimensions = [0, 0];
@@ -208,6 +209,6 @@ export class TicTacToeGame extends Game {
   }
 
   end() {
-    this.running = false;
+    super.end();
   }
 }

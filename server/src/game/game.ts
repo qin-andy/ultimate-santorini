@@ -3,6 +3,7 @@ import { PlayerManager } from "./playerManager";
 import { nanoid } from "nanoid";
 import { Player } from "./player";
 import { GameEvent, GameResponse } from '../types/types';
+import { GameManager } from './gameManager';
 
 export class Game {
   io: Server;
@@ -12,8 +13,9 @@ export class Game {
   running: boolean;
   eventHandlerMap: Map<string, Function> // event name to handler
   teamMap: Map<string, string>; // id to team
+  gameManager: undefined | GameManager;
 
-  constructor(name: string, io: Server) {
+  constructor(name: string, io: Server, gameManager?: GameManager) {
     this.name = name;
     this.playerManager = new PlayerManager();
     this.roomId = nanoid();
@@ -21,6 +23,7 @@ export class Game {
     this.running = false;
     this.eventHandlerMap = new Map<string, Function>(); // event name to callback
     this.teamMap = new Map<string, string>(); // id to team
+    this.gameManager = gameManager;
     this.initializeHandlers();
   }
 
@@ -58,6 +61,7 @@ export class Game {
       this.handleEvent(event);
     });
     player.currentGame = this;
+    player.inGame = true;
     this.playerManager.addPlayer(player);
   }
 
@@ -81,12 +85,11 @@ export class Game {
   };
 
   end() {
-    // resets game data
-    // to be implemented in children
+    this.running = false;
+    if (this.gameManager) this.gameManager.closeGame(this);
   }
 
   close() {
-    // TODO : on player disconnect, if room is empty, close self?
     this.end();
     this.playerManager.close();
     this.teamMap.clear();

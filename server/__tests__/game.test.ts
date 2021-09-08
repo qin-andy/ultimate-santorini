@@ -63,6 +63,11 @@ describe('game class tests', () => {
       expect(players[0].currentGame).toStrictEqual(game);
     });
 
+    it('after add player, player ingame is true', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 3);
+      expect(players[0].inGame).toBe(true);
+    });
+
     it('after add player, game playerManager has correct info 1', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 3);
       expect(game.playerManager.getCount()).toBe(3);

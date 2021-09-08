@@ -27,6 +27,19 @@ export class GameManager {
     return timer;
   }
 
+  closeGame(game: Game) {
+    let remainingPlayers = game.playerManager.getIds();
+    remainingPlayers.forEach(id => {
+      let player = this.playersMap.get(id);
+      if (player) {
+        player.inGame = false;
+        player.currentGame = null;
+      }
+    });
+    game.close();
+    this.gamesMap.delete(game.name);
+  }
+
   matchmakePlayersInQueue(): boolean {
     if (this.matchmakingQueue.length >= 2) {
       let player1id = this.matchmakingQueue.shift();
@@ -115,7 +128,12 @@ export class GameManager {
           this.matchmakingQueue.splice(index, 1);
         }
         socket.removeAllListeners();
-        this.playersMap.get(socket.id)?.currentGame?.removePlayer(socket.id);
+        let player = this.playersMap.get(socket.id);
+        let currentGame = player?.currentGame;
+        player?.currentGame?.removePlayer(socket.id);
+        if (currentGame?.playerManager.getCount() === 0) {
+          this.closeGame(currentGame);
+        }
         this.playersMap.delete(socket.id);
       });
     });
