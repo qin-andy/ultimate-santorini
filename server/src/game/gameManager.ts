@@ -32,7 +32,7 @@ export class GameManager {
       let player1id = this.matchmakingQueue.shift();
       if (!player1id) return false;
       let player1 = this.playersMap.get(player1id);
-      if (!player1 || !player1.socket.connected || player1.inGame) return false;
+      if (!player1 || !player1.socket.connected) return false;
 
       let player2id = this.matchmakingQueue.shift();
       if (!player2id) {
@@ -40,14 +40,12 @@ export class GameManager {
         return false;
       }
       let player2 = this.playersMap.get(player2id);
-      if (!player2 || !player2.socket.connected || player2.inGame) {
+      if (!player2 || !player2.socket.connected) {
         this.matchmakingQueue.push(player1id);
         return false;
       }
 
       let newGame = new TicTacToeGame(player1id + player2id, this.io);
-      player1.inGame = true;
-      player2.inGame = true;
       newGame.addPlayer(player1);
       newGame.addPlayer(player2);
       newGame.start(); // TODO : someone might join the game by chance before game start?
