@@ -3,6 +3,10 @@ $cell-size: 100px;
 .tictactoe-cell {
   height: $cell-size;
   width: $cell-size;
+  border: 5px;
+  border-style: solid;
+  border-color: black;
+  border-radius: 16px;
 
   P {
     margin: 0;

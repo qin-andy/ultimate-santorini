@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Button, ButtonProps, Spinner } from "react-bootstrap";
 
 interface QueueButtonProps extends ButtonProps {
-  clicked: Function;
-  setInGame: Function;
+  
 }
 
 const QueueButton = (props: QueueButtonProps) => {
@@ -15,7 +14,6 @@ const QueueButton = (props: QueueButtonProps) => {
       className={inQueue ? 'lh-1' : ''}
       onClick={() => {
         setInQueue(true);
-        props.clicked();
       }}
     >
       {inQueue ? <Spinner animation='border' size='sm' role='status'></Spinner> : 'Start'}

@@ -2,7 +2,6 @@ import { Game } from "./game";
 import { Server } from 'socket.io';
 import { GameEvent, GameResponse } from "../types/types";
 import { GameManager } from "./gameManager";
-import { response } from "express";
 
 export class TicTacToeGame extends Game {
   turn: string;
@@ -20,7 +19,7 @@ export class TicTacToeGame extends Game {
     super.initializeHandlers();
     const markHandler = (event: GameEvent) => {
       let response = this.mark(event.id, event.payload.x, event.payload.y);
-      if (response.error) {
+      if (!response.error) {
         this.io.to(this.roomId).emit('game update', response);
       } else {
         this.io.to(event.id).emit('game update', response);
@@ -37,8 +36,6 @@ export class TicTacToeGame extends Game {
 
     this.eventHandlerMap.set('tictactoe mark', markHandler);
     this.eventHandlerMap.set('tictactoe start', startHandler);
-
-
   }
 
   handleEvent(event: GameEvent) {

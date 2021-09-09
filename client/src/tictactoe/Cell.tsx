@@ -7,7 +7,7 @@ interface CellProps {
   onClick: Function,
 }
 
-const Board = (props: CellProps) => {
+const Cell = (props: CellProps) => {
   let svg = null;
   if (props.marking === 'x') {
     svg = <img src='x.svg' alt='x' />;
@@ -24,4 +24,4 @@ const Board = (props: CellProps) => {
   );
 }
 
-export default Board;
+export default Cell;

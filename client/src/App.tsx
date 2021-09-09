@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Switch } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import JoinPage from './pages/JoinPage';
 import CreatePage from './pages/CreatePage';
+import ManagerPage from './pages/ManagerPage';
 
 
 const App = () => {
@@ -15,8 +16,11 @@ const App = () => {
         <Route path="/create">
           <CreatePage />
         </Route>
-        <Route path="/">
+        <Route path="/home">
           <HomePage />
+        </Route>
+        <Route path="/">
+          <ManagerPage />
         </Route>
       </Switch>
     </BrowserRouter>

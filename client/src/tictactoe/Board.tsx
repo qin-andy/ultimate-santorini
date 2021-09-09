@@ -4,15 +4,21 @@ import { Col, Row } from 'react-bootstrap';
 import Cell from './Cell';
 import './tictactoe.scss'
 import { ReactElement } from 'react';
+import { useTictactoeBoard } from '../hooks/hooks';
+import socket, { tictactoeMark } from '../services/socket';
 
 interface BoardProps {
   x: number,
-  y: number,
-  data: marking[],
-  onClick: Function
+  y: number
 }
 
 const Board = (props: BoardProps) => {
+  function onCellClick(x: number, y: number) {
+    console.log(x, y);
+    if (board) console.log(board[y * props.y + x]);
+    tictactoeMark(x, y);
+  }
+
   function renderData(data: marking[]): ReactElement[] {
     let rows: ReactElement[] = [];
     for (let i = 0; i < props.y; i++) {
@@ -21,9 +27,9 @@ const Board = (props: BoardProps) => {
         cells.push(
           <Col key={i * props.y + j} className='p-0'>
             <Cell
-              marking={props.data[i * props.y + j]}
+              marking={data[i * props.y + j]}
               x={j} y={i}
-              onClick={props.onClick}
+              onClick={onCellClick}
             />
           </Col>
         )
@@ -37,10 +43,12 @@ const Board = (props: BoardProps) => {
     return rows;
   }
 
+  let board = useTictactoeBoard(socket);
+
   return (
     <div className='m-3 tictactoe-grid'>
       {
-        renderData(props.data)
+        renderData(board)
       }
     </div>
   );
