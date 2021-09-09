@@ -1,9 +1,8 @@
 import { Server, Socket as ServerSocket } from 'socket.io';
 import { Socket as ClientSocket } from 'socket.io-client';
-import { TicTacToeGame } from '../src/game/tictactoe';
 import { GameManager } from '../src/game/gameManager';
 import { Player } from '../src/game/player';
-import { GameEvent, GameResponse } from '../src/types/types';
+import { ManagerResponse } from '../src/types/types';
 import { createSocketPairs, createSocketServer } from './helpers';
 import { Game } from '../src/game/game';
 
@@ -47,19 +46,20 @@ describe('game manager tests', () => {
   }
 
   let createGameFactory = (clientSocket: ClientSocket, gameId: string, type: string = '') => {
-    return new Promise<boolean>((resolve, reject) => {
+    return new Promise<ManagerResponse>((resolve, reject) => {
       let timeout = setTimeout(() => reject('timeout'), 200);
-      clientSocket.emit('create game', gameId, type, (response: boolean) => {
+      let payload = { name: gameId, type: type }
+      clientSocket.emit('manager action', 'create game', payload, (response: ManagerResponse) => {
         clearInterval(timeout);
         resolve(response);
       });
     });
   }
 
-  let joinGameFactory = (clientSocket: ClientSocket, gameId: string) => {
-    return new Promise<boolean>((resolve, reject) => {
+  let joinGameFactory = (clientSocket: ClientSocket, name: string) => {
+    return new Promise<ManagerResponse>((resolve, reject) => {
       let timeout = setTimeout(() => reject('timeout'), 200);
-      clientSocket.emit('join game', gameId, (response: boolean) => {
+      clientSocket.emit('manager action', 'join game', name, (response: ManagerResponse) => {
         clearInterval(timeout);
         resolve(response);
       });
@@ -67,9 +67,9 @@ describe('game manager tests', () => {
   }
 
   let pingPromiseFactory = (clientSocket: ClientSocket) => {
-    return new Promise<string>((resolve, reject) => {
+    return new Promise<ManagerResponse>((resolve, reject) => {
       let timeout = setTimeout(() => reject('timeout'), 200);
-      clientSocket.emit('ping', (response: string) => {
+      clientSocket.emit('manager action', 'ping', null, (response: ManagerResponse) => {
         clearInterval(timeout);
         resolve(response);
       });
@@ -77,8 +77,8 @@ describe('game manager tests', () => {
   }
 
   let responsePromiseFactory = async (clientSocket: ClientSocket) => { // helper function for game responses
-    let updatePromise = new Promise<GameResponse>((resolve, reject) => {
-      clientSocket.once('game update', (response: GameResponse) => {
+    let updatePromise = new Promise<ManagerResponse>((resolve, reject) => {
+      clientSocket.once('game update', (response: ManagerResponse) => {
         if (response.error) {
           reject(response);
         } else {
@@ -90,9 +90,9 @@ describe('game manager tests', () => {
   }
 
   let queuePromiseFactory = (clientSocket: ClientSocket) => {
-    return new Promise<boolean>((resolve, reject) => {
+    return new Promise<ManagerResponse>((resolve, reject) => {
       let timeout = setTimeout(() => reject('timeout'), 200);
-      clientSocket.emit('join queue', (response: boolean) => {
+      clientSocket.emit('manager action', 'join queue', null, (response: ManagerResponse) => {
         clearInterval(timeout);
         resolve(response);
       });
@@ -134,15 +134,15 @@ describe('game manager tests', () => {
 
     it('ping listener attached correctly to first socket', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
-      expect(await pingPromiseFactory(clientSockets[0])).toBe('pong');
+      expect((await pingPromiseFactory(clientSockets[0])).payload).toBe('pong');
     });
 
     it('ping listener attached correctly to multiple sockets', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 4);
-      expect(await pingPromiseFactory(clientSockets[0])).toBe('pong');
-      expect(await pingPromiseFactory(clientSockets[1])).toBe('pong');
-      expect(await pingPromiseFactory(clientSockets[2])).toBe('pong');
-      expect(await pingPromiseFactory(clientSockets[3])).toBe('pong');
+      expect((await pingPromiseFactory(clientSockets[0])).payload).toBe('pong');
+      expect((await pingPromiseFactory(clientSockets[1])).payload).toBe('pong');
+      expect((await pingPromiseFactory(clientSockets[2])).payload).toBe('pong');
+      expect((await pingPromiseFactory(clientSockets[3])).payload).toBe('pong');
     });
 
     it('player disconnect removes them from their current game', async () => {
@@ -188,10 +188,10 @@ describe('game manager tests', () => {
 
   describe('event create game', () => {
     // create game adds game to gamesMap
-    it('create game with unique id acknowledges true', async () => {
+    it('create game with unique id manager response no errors', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
-      let acknowledged = await createGameFactory(clientSockets[0], 'Test Game');
-      expect(acknowledged).toBe(true);
+      let response = await createGameFactory(clientSockets[0], 'Test Game');
+      expect(response.error).toBe(false);
     });
 
     it('create game adds a new game to gamesMap', async () => {
@@ -246,35 +246,46 @@ describe('game manager tests', () => {
       ]));
     });
 
-    it('two create games with same name, second acknowledges fail', async () => {
+    it('two create games with same name, second response error is true', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
       await createGameFactory(clientSockets[0], 'Same Name');
-      expect(await createGameFactory(clientSockets[1], 'Same Name')).toBe(false);
+      let response = await createGameFactory(clientSockets[1], 'Same Name');
+      expect(response.error).toBe(true);
     });
 
-    it('multiple create games with same name, other acknowledges fail', async () => {
+    it('multiple create games with same name, other response errors are true', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 4);
       await createGameFactory(clientSockets[0], 'Same Name');
-      expect(await createGameFactory(clientSockets[1], 'Same Name')).toBe(false);
-      expect(await createGameFactory(clientSockets[2], 'Same Name')).toBe(false);
-      expect(await createGameFactory(clientSockets[3], 'Same Name')).toBe(false);
-      expect(await createGameFactory(clientSockets[1], 'Same Name')).toBe(false);
+      let responsePromises = [
+        createGameFactory(clientSockets[1], 'Same Name'),
+        createGameFactory(clientSockets[2], 'Same Name'),
+        createGameFactory(clientSockets[3], 'Same Name'),
+        createGameFactory(clientSockets[1], 'Same Name')
+      ];
+
+      let responses = await Promise.all(responsePromises);
+      expect(responses[0].error).toBe(true);
+      expect(responses[1].error).toBe(true);
+      expect(responses[2].error).toBe(true);
+      expect(responses[3].error).toBe(true);
     });
 
-    it('create game while already in game acknowledges fail', async () => {
+    it('create game while already in game response error is true', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
-      await createGameFactory(clientSockets[0], 'Game 1');
-      expect(await createGameFactory(clientSockets[0], 'Game 2')).toBe(false);
+      await createGameFactory(clientSockets[0], 'Game 2');
+      let response = await createGameFactory(clientSockets[0], 'Game 1');
+      expect(response.error).toBe(true);
     });
   });
 
   describe('event join game', () => {
     // game joined adds player successfully
-    it('join game in gamesMap acknowledges true', async () => {
+    it('join game in gamesMap error is false', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
       let newGame = new Game('Direct Set Game', io)
       gameManager.gamesMap.set('Direct Set Game', newGame);
-      expect(await joinGameFactory(clientSockets[0], 'Direct Set Game')).toBe(true);
+      let response = await joinGameFactory(clientSockets[0], 'Direct Set Game')
+      expect(response.error).toBe(false);
     });
 
     it('join game in gamesMap adds player with correct id to game', async () => {
@@ -308,12 +319,13 @@ describe('game manager tests', () => {
       expect(playerIds).toStrictEqual(expect.arrayContaining(expectedIds));
     });
 
-    it('join nonexistnet game acknolwedges false', async () => {
+    it('join nonexistent game response error is true', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
-      expect(await joinGameFactory(clientSockets[0], 'Fake Game')).toBe(false);
+      let response = await joinGameFactory(clientSockets[0], 'Fake Game')
+      expect(response.error).toBe(true);
     });
 
-    it('one socket joining multiple games acknowledges false', async () => {
+    it('one socket joining multiple games error is true', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
       let newGame1 = new Game('Direct Set Game 1', io)
       gameManager.gamesMap.set('Direct Set Game 1', newGame1);
@@ -321,17 +333,19 @@ describe('game manager tests', () => {
       let newGame2 = new Game('Direct Set Game 2', io)
       gameManager.gamesMap.set('Direct Set Game 2', newGame2);
 
-      expect(await joinGameFactory(clientSockets[0], 'Direct Set Game 1')).toBe(true);
-      expect(await joinGameFactory(clientSockets[0], 'Direct Set Game 2')).toBe(false);
+      let response1 = await joinGameFactory(clientSockets[0], 'Direct Set Game 1');
+      let response2 = await joinGameFactory(clientSockets[0], 'Direct Set Game 1');
+      expect(response1.error).toBe(false);
+      expect(response2.error).toBe(true);
     });
   });
 
   describe('matchmatking queue', () => {
     describe('join queue event through socket emit', () => {
-      it('new player join queue acknowledges true', async () => {
+      it('new player join queue error is false', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
-        let acknowledgment = await queuePromiseFactory(clientSockets[0]);
-        expect(acknowledgment).toBe(true);
+        let response = await queuePromiseFactory(clientSockets[0]);
+        expect(response.error).toBe(false);
       });
 
       it('player join queue has id added to queue', async () => {
@@ -350,24 +364,24 @@ describe('game manager tests', () => {
         expect(player.inGame).toBe(true);
       });
 
-      it('player with ingame as false attempt join queue acknokwledges fast', async () => {
+      it('player with ingame as false attempt join queue response error is true', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
         let player = gameManager.playersMap.get(clientSockets[0].id);
         if (!player) {
           throw new Error('Player doesn\'t exist!');
         }
         player.inGame = true;
-        let acknowledgment = await queuePromiseFactory(clientSockets[0]);
+        let response = await queuePromiseFactory(clientSockets[0]);
         expect(gameManager.matchmakingQueue.length).toBe(0);
-        expect(acknowledgment).toBe(false);
+        expect(response.error).toBe(true);
       });
 
-      it('player no int playermap attempt join queue acknokwledges fast', async () => {
+      it('player not in playermap attempt join queue response error is true', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
         gameManager.playersMap.delete(clientSockets[0].id);
-        let acknowledgment = await queuePromiseFactory(clientSockets[0]);
+        let response = await queuePromiseFactory(clientSockets[0]);
         expect(gameManager.matchmakingQueue.length).toBe(0);
-        expect(acknowledgment).toBe(false);
+        expect(response.error).toBe(true);
       });
 
       it('player disconnect removes them from queue', async () => {
@@ -659,7 +673,7 @@ describe('game manager tests', () => {
       // Two games, first has errors and wins, second ends on a mark
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 4);
       let DELAY = 100;
-      let game1Promise = new Promise<GameResponse>(async resolve => {
+      let game1Promise = new Promise<ManagerResponse>(async resolve => {
         // direct game, repeated actions/moving out of turn
 
         await createGameFactory(clientSockets[0], 'Game 1', 'tictactoe');
@@ -711,7 +725,7 @@ describe('game manager tests', () => {
         resolve(response);
       });
 
-      let game2Promise = new Promise<GameResponse>(async resolve => {
+      let game2Promise = new Promise<ManagerResponse>(async resolve => {
         // direct game, repeated actions/moving out of turn
 
         await createGameFactory(clientSockets[2], 'Game 2', 'tictactoe');
@@ -754,7 +768,7 @@ describe('game manager tests', () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 10);
       let DELAY = 100;
       let duplicateGameTestFactory = (name: string, i: number, j: number) => {
-        return new Promise<GameResponse>(async resolve => {
+        return new Promise<ManagerResponse>(async resolve => {
           // direct game, repeated actions/moving out of turn
 
           await createGameFactory(clientSockets[i], name, 'tictactoe');
@@ -835,7 +849,7 @@ describe('game manager tests', () => {
       gameManager.matchmakePlayersInQueue();
       gameManager.matchmakePlayersInQueue();
       expect(gameManager.matchmakingQueue).toStrictEqual([clientSockets[4].id]);
-      let game1Promise = new Promise<GameResponse>(async resolve => {
+      let game1Promise = new Promise<ManagerResponse>(async resolve => {
         let gameName = clientSockets[0].id + clientSockets[1].id;
         let start = gameManager.gamesMap.get(gameName)?.start();
 
@@ -883,7 +897,7 @@ describe('game manager tests', () => {
         resolve(response);
       });
 
-      let game2Promise = new Promise<GameResponse>(async resolve => {
+      let game2Promise = new Promise<ManagerResponse>(async resolve => {
         // direct game, repeated actions/moving out of turn
         let gameName = clientSockets[0].id + clientSockets[1].id;
         gameManager.gamesMap.get(gameName)?.start();

@@ -15,3 +15,17 @@ export interface GameResponse {
   type: string,
   message: string
 }
+
+export interface ManagerEvent {
+  type: string,
+  payload: any,
+  id: string,
+  acknowledger: Function
+}
+
+export interface ManagerResponse {
+  error: boolean,
+  payload: any,
+  type: string,
+  message: string
+}
