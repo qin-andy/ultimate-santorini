@@ -56,11 +56,7 @@ describe('tictactoe tests', () => {
   let responsePromiseFactory = async (i: number) => { // helper function for game responses
     let updatePromise = new Promise<GameResponse>((resolve, reject) => {
       clientSockets[i].once('game update', (response: GameResponse) => {
-        if (response.error) {
-          reject(response);
-        } else {
-          resolve(response)
-        }
+        resolve(response);
       });
     });
     return updatePromise;
@@ -430,13 +426,59 @@ describe('tictactoe tests', () => {
 
       let boardPromise = boardPromiseFactory(1);
       clientSockets[1].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
-      expect(boardPromise).rejects.toBeTruthy(); // is there a way to read the error?
+      expect(boardPromise).rejects.toBeTruthy();
+    });
+
+    it('start game with 2 players emits correct response to both players', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      let startResponsePromise1 = responsePromiseFactory(0);
+      let startResponsePromise2 = responsePromiseFactory(1);
+
+      clientSockets[0].emit('game action', 'tictactoe start', null);
+      let response1 = await startResponsePromise1;
+      let response2 = await startResponsePromise2;
+      let expectedResponse = {
+        error: false,
+        payload: true,
+        type: 'start success',
+        message: 'Game started!'
+      }
+      expect(response1).toStrictEqual(expectedResponse);
+      expect(response2).toStrictEqual(expectedResponse);
+    });
+
+    it('start game without 2 players responds with error', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+      let startResponsePromise1 = responsePromiseFactory(0);
+      clientSockets[0].emit('game action', 'tictactoe start', null);
+      let response1 = await startResponsePromise1;
+      let expectedResponse = {
+        error: true,
+        payload: 1,
+        type: 'start fail',
+        message: 'Game can only start with 2 players!'
+      }
+      expect(response1).toStrictEqual(expectedResponse);
+    });
+
+    it('start game twice responds with error', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      clientSockets[0].emit('game action', 'tictactoe start');
+      await sleepFactory(200)
+      let startResponsePromise1 = responsePromiseFactory(0);
+      clientSockets[0].emit('game action', 'tictactoe start');
+      let response1 = await startResponsePromise1;
+      expect(response1.error).toBe(true);
+      expect(response1.type).toBe('start fail');
+
     });
 
     it('full game 1', async () => {
       // direct game, no errors
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
-      game.start();
+      let startResponsePromise = responsePromiseFactory(0);
+      clientSockets[0].emit('game action', 'tictactoe start');
+      await startResponsePromise;
 
       let boardPromise = boardPromiseFactory(0);
       clientSockets[0].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
@@ -473,7 +515,9 @@ describe('tictactoe tests', () => {
     it('full game 2', async () => {
       // direct game, repeated actions/moving out of turn
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
-      game.start();
+      let startResponsePromise = responsePromiseFactory(0);
+      clientSockets[0].emit('game action', 'tictactoe start');
+      await startResponsePromise;
 
       clientSockets[0].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
       await sleepFactory(200);

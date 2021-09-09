@@ -11,6 +11,7 @@ export class Game {
   name: string;
   roomId: string;
   running: boolean;
+  completed: boolean;
   eventHandlerMap: Map<string, Function> // event name to handler
   teamMap: Map<string, string>; // id to team
   gameManager: undefined | GameManager;
@@ -21,6 +22,7 @@ export class Game {
     this.roomId = nanoid();
     this.io = io;
     this.running = false;
+    this.completed = false;
     this.eventHandlerMap = new Map<string, Function>(); // event name to callback
     this.teamMap = new Map<string, string>(); // id to team
     this.gameManager = gameManager;
@@ -86,6 +88,7 @@ export class Game {
 
   end() {
     this.running = false;
+    this.completed = true;
     if (this.gameManager) this.gameManager.closeGame(this);
   }
 

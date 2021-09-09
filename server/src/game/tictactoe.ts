@@ -2,6 +2,7 @@ import { Game } from "./game";
 import { Server } from 'socket.io';
 import { GameEvent, GameResponse } from "../types/types";
 import { GameManager } from "./gameManager";
+import { response } from "express";
 
 export class TicTacToeGame extends Game {
   turn: string;
@@ -17,8 +18,7 @@ export class TicTacToeGame extends Game {
 
   initializeHandlers() {
     super.initializeHandlers();
-
-    const handleMark = (event: GameEvent) => {
+    const markHandler = (event: GameEvent) => {
       let response = this.mark(event.id, event.payload.x, event.payload.y);
       if (response.error) {
         this.io.to(this.roomId).emit('game update', response);
@@ -26,15 +26,42 @@ export class TicTacToeGame extends Game {
         this.io.to(event.id).emit('game update', response);
       }
     }
-    this.eventHandlerMap.set('tictactoe mark', handleMark);
+    const startHandler = (event: GameEvent) => {
+      let response = this.start();
+      if (response.payload) { // success?
+        this.io.to(this.roomId).emit('game update', response);
+      } else { // error
+        this.io.to(event.id).emit('game update', response);
+      }
+    }
+
+    this.eventHandlerMap.set('tictactoe mark', markHandler);
+    this.eventHandlerMap.set('tictactoe start', startHandler);
+
+
   }
 
   handleEvent(event: GameEvent) {
-     super.handleEvent(event);
+    super.handleEvent(event);
   }
 
   // tic tac toe logic
   start(x = 3, y = 3): GameResponse {
+    let response = {
+      error: false,
+      payload: true,
+      type: 'start success',
+      message: 'Game started!'
+    }
+
+    if (this.running || this.completed) {
+      response.error = true;
+      response. payload = false;
+      response.type = 'start fail';
+      response.message = 'game already started or completed';
+      return response;
+    }
+
     if (this.playerManager.getCount() !== 2) {
       return {
         error: true,
@@ -43,36 +70,32 @@ export class TicTacToeGame extends Game {
         message: 'Game can only start with 2 players!'
       };
     }
+
     let players = Array.from(this.playerManager.playerMap.values())
     this.teamMap.set(players[0].id, 'o');
     this.teamMap.set(players[1].id, 'x');
 
     this.dimensions = [x, y];
-    this.board = new Array<string>(x*y);
+    this.board = new Array<string>(x * y);
     this.board.fill('*');
     this.turn = 'o';
     this.running = true;
-    return {
-      error: false,
-      payload: null,
-      type: 'start success',
-      message: 'Game started!'
-    }
+    return response;
   }
 
   getBoardIndex(x: number, y: number): number {
     let xSize = 3;
-    return x + y*xSize;
+    return x + y * xSize;
   }
 
   mark(id: string, x: number, y: number): GameResponse {
     // game must be running
-    if(!this.running) {
+    if (!this.running) {
       let error: GameResponse = {
         error: true,
         payload: [x, y],
         type: 'not running', // TODO : square error?
-        message: 'Game is over' // TODO : include board dimensions and squares
+        message: 'Game is not running!' // TODO : include board dimensions and squares
       }
       return error;
     }

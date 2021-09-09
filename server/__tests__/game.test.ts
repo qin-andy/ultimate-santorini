@@ -191,4 +191,13 @@ describe('game class tests', () => {
       expect(await mirrorPromise).toBe('no message');
     });
   });
+
+  describe('closing and ending', () => {
+    it.todo('closing the game sets running to false');
+    it('end game sets completed to false', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+      game.end();
+      expect(game.completed).toBe(true);
+    });
+  });
 });
