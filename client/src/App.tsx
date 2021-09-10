@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Route, Switch } from 'react-router-dom';
-import ManagerPage from './pages/ManagerPage';
+import ManagerPage from './manager/ManagerPage';
 
 
 const App = () => {

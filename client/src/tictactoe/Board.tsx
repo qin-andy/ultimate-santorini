@@ -5,7 +5,7 @@ import Cell from './Cell';
 import './tictactoe.scss'
 import { ReactElement } from 'react';
 import { useAppSelector } from '../hooks/hooks';
-import socket, { tictactoeMark } from '../services/socket';
+import { tictactoeMark } from '../services/socket';
 
 interface BoardProps {
   x: number,
