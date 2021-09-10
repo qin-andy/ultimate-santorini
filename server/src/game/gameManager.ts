@@ -3,6 +3,7 @@ import { Player } from "./player";
 import { TicTacToeGame } from './tictactoe';
 import { Server } from 'socket.io';
 import { ManagerEvent, ManagerResponse } from "../types/types";
+import { response } from "express";
 
 export class GameManager {
   gamesMap: Map<string, Game>;
@@ -116,25 +117,37 @@ export class GameManager {
       let game = this.gamesMap.get(event.payload);
       let player = this.playersMap.get(event.id);
 
-      if (!player) return {
-        error: false,
-        type: 'leave game',
-        payload: null,
-        message: 'player does not exist!'
+      if (!player) {
+        let response = {
+          error: true,
+          type: 'does not exist',
+          payload: event.id,
+          message: 'player does not exist!'
+        }
+        event.acknowledger(response);
+        return response;
       }
 
-      if (player?.inGame) return {
-        error: true,
-        type: 'join game',
-        payload: player.currentGame?.name,
-        message: 'Player already in game: ' + player.currentGame?.name
+      if (player?.inGame) {
+        let response = {
+          error: true,
+          type: 'join game',
+          payload: player.currentGame?.name,
+          message: 'Player already in game: ' + player.currentGame?.name
+        }
+        event.acknowledger(response);
+        return response;
       }
 
-      if (!game) return {
-        error: true,
-        type: 'join game',
-        payload: event.payload,
-        message: 'game does not exist: ' + event.payload
+      if (!game) {
+        let response = {
+          error: true,
+          type: 'join game',
+          payload: event.payload,
+          message: 'game does not exist: ' + event.payload
+        }
+        event.acknowledger(response);
+        return response;
       }
 
       let response: ManagerResponse = {
@@ -151,65 +164,86 @@ export class GameManager {
 
     let leaveGameHandler = (event: ManagerEvent) => {
       let player = this.playersMap.get(event.id);
-      if (!player) return {
-        error: false,
-        type: 'leave game',
-        payload: null,
-        message: 'player does not exist!'
+      // if player doesn't exist
+      if (!player) {
+        let response = {
+          error: true,
+          type: 'does not exist',
+          payload: event.id,
+          message: 'player does not exist!'
+        }
+        event.acknowledger(response);
+        return response;
       }
 
-      if (!player?.inGame || !player.currentGame) return {
-        error: true,
-        type: 'leave game',
-        payload: null,
-        message: 'player not in game!'
+      // if player is not in game
+      if (!player?.inGame || !player.currentGame) {
+        let response = {
+          error: true,
+          type: 'leave game',
+          payload: null,
+          message: 'player not in game!'
+        }
+        event.acknowledger(response);
+        return response;
       }
+
+      // leave game logic
       let game = player.currentGame;
       let gameName = game.name;
       player.currentGame.removePlayer(player.id);
-
-      if (game.playerManager.getCount() === 0) {
-        this.closeGame(game);
-      }
-
-      return {
+      let response = {
         error: false,
         type: 'leave game',
         payload: gameName,
         message: 'left game ' + gameName
       };
+      event.acknowledger(response);
+      return response;
     };
 
     let createGameHandler = (event: ManagerEvent) => {
       // payload: { name: string, type: string }
       let player = this.playersMap.get(event.id);
-      if (!player) return {
-        error: false,
-        type: 'leave game',
-        payload: null,
-        message: 'player does not exist!'
+      if (!player) {
+        let response = {
+          error: true,
+          type: 'does not exist',
+          payload: event.id,
+          message: 'player does not exist!'
+        }
+        event.acknowledger(response);
+        return response;
       }
 
-      if (player?.inGame) return {
-        error: true,
-        type: 'create game',
-        payload: player.currentGame?.name,
-        message: 'Player already in game: ' + player.currentGame?.name
+      if (player?.inGame) {
+        let response = {
+          error: true,
+          type: 'create game',
+          payload: player.currentGame?.name,
+          message: 'Player already in game: ' + player.currentGame?.name
+        }
+        event.acknowledger(response);
+        return response;
       }
 
-      if (this.gamesMap.has(event.payload.name)) return {
-        error: true,
-        type: 'create game',
-        payload: event.payload.name,
-        message: 'Game name already exists: ' + event.payload.name
+      if (this.gamesMap.has(event.payload.name)) {
+        let response = {
+          error: true,
+          type: 'create game',
+          payload: event.payload.name,
+          message: 'Game name already exists: ' + event.payload.name
+        }
+        event.acknowledger(response);
+        return response;
       }
 
       player.inGame = true;
       let game: Game;
       if (event.payload.type === 'tictactoe') {
-        game = new TicTacToeGame(event.payload.name, this.io)
+        game = new TicTacToeGame(event.payload.name, this.io, this)
       } else {
-        game = new Game(event.payload.name, this.io)
+        game = new Game(event.payload.name, this.io, this)
       }
       this.gamesMap.set(event.payload.name, game);
       game.addPlayer(player);
@@ -227,7 +261,7 @@ export class GameManager {
       let player = this.playersMap.get(event.id);
       if (!player) return {
         error: true,
-        type: 'player info',
+        type: 'does not exist',
         payload: event.id,
         message: 'player id does not exist!'
       }

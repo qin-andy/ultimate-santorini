@@ -32,12 +32,12 @@ const ManagerPage = () => {
       console.log(response);
       dispatch({ type: 'tictactoe/gameResponseReceived', payload: response })
       if (response.type === 'start success') {
-        let board: marking[] = new Array<marking>(response.payload.x * response.payload.y);
+        let board: marking[] = new Array<marking>(response.payload.size.x * response.payload.size.y);
         board.fill('*');
-        let payload = { x: response.payload.x, y: response.payload.y, board }
+        let payload = { x: response.payload.size.x, y: response.payload.size.y, board }
         dispatch({ type: 'tictactoe/gameStarted', payload });
       } else if (response.type === 'mark') {
-        dispatch({ type: 'tictactoe/boardUpdated', payload: response.payload });
+        dispatch({ type: 'tictactoe/boardUpdated', payload: response.payload.board });
       } else if (response.type === 'win') {
         dispatch({
           type: 'tictactoe/gameWon', payload: {

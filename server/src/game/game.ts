@@ -77,9 +77,15 @@ export class Game {
       error: false,
       type: 'player disconnect',
       payload: { name: player?.name, id: player?.id },
-      message: 'player disconnected!'
+      message: 'player left the game!'
     });
-    return this.playerManager.removePlayer(id);
+    this.playerManager.removePlayer(id);
+
+    // if game is empty, end it
+    if (this.playerManager.getCount() === 0) {
+      this.end();
+    }
+    return player;
   }
 
   start(): GameResponse {
@@ -99,7 +105,8 @@ export class Game {
   }
 
   close() {
-    this.end();
+    this.running = false;
+    this.completed = true;
     this.playerManager.close();
     this.teamMap.clear();
     this.eventHandlerMap.clear();

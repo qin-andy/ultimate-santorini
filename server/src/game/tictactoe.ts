@@ -45,12 +45,7 @@ export class TicTacToeGame extends Game {
 
   // tic tac toe logic
   start(x = 3, y = 3): GameResponse {
-    let response: GameResponse = {
-      error: false,
-      payload: { x, y },
-      type: 'start success',
-      message: 'Game started!'
-    }
+
 
     if (this.running || this.completed) {
       return {
@@ -70,7 +65,7 @@ export class TicTacToeGame extends Game {
       };
     }
 
-    let players = Array.from(this.playerManager.playerMap.values())
+    let players = Array.from(this.playerManager.playerMap.values());
     this.teamMap.set(players[0].id, 'o');
     this.teamMap.set(players[1].id, 'x');
 
@@ -79,6 +74,18 @@ export class TicTacToeGame extends Game {
     this.board.fill('*');
     this.turn = 'o';
     this.running = true;
+    let response: GameResponse = {
+      error: false,
+      payload: {
+        size: { x, y },
+        board: this.board,
+        turn: this.turn,
+        o: players[0].name,
+        x: players[1].name
+      },
+      type: 'start success',
+      message: 'Game started!'
+    }
     return response;
   }
 
@@ -92,7 +99,7 @@ export class TicTacToeGame extends Game {
     if (!this.running) {
       return {
         error: true,
-        payload: [x, y],
+        payload: null,
         type: 'not running',
         message: 'Game is not running!'
       }
@@ -103,7 +110,7 @@ export class TicTacToeGame extends Game {
     if (squareIndex >= this.board.length) {
       return {
         error: true,
-        payload: {x, y},
+        payload: { x, y },
         type: 'out of bounds', // TODO : square error?
         message: 'Invalid square, out of bounds' // TODO : include board dimensions and squares
       }
@@ -131,25 +138,34 @@ export class TicTacToeGame extends Game {
       return error;
     }
 
-    this.board[squareIndex] = this.turn;
-    this.turn = this.teamMap.get(id) === 'o' ? 'x' : 'o';
-    let response: GameResponse = {
-      error: false,
-      payload: this.board,
-      type: 'mark',
-      message: 'player marked, now it is ' + this.turn + '\'s turn'
-    }
-    // winner
+    this.board[squareIndex] = this.turn; // actual marking
+    // check winner
     if (this.checkWin(x, y)) {
       this.end();
       return {
         error: false,
-        payload: { winner: this.board[squareIndex], board: this.board },
+        payload: {
+          board: this.board,
+          mark: {x, y},
+          winner: this.board[squareIndex],
+        },
         type: 'win',
         message: this.board[squareIndex] + ' has won!',
       }
     }
-    return response;
+
+    // otherwise, toggle turn and send full state
+    this.turn = this.teamMap.get(id) === 'o' ? 'x' : 'o';
+    return {
+      error: false,
+      payload: {
+        board: this.board,
+        mark: { x, y },
+        turn: this.turn,
+      },
+      type: 'mark',
+      message: 'player marked, now it is ' + this.turn + '\'s turn'
+    };
   }
 
   checkWin(x: number, y: number): boolean {
@@ -229,9 +245,5 @@ export class TicTacToeGame extends Game {
       }
     }
     return false;
-  }
-
-  end() {
-    super.end();
   }
 }

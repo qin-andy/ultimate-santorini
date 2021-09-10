@@ -53,7 +53,7 @@ describe('game class tests', () => {
     setTimeout(done, IN_BETWEEN_DELAY);
   });
 
-  describe('basic info', () => {
+  describe('adding and removing players', () => {
     it('name returns right name', async () => {
       expect(game.name).toBe('Test Game 1');
     });
@@ -114,6 +114,16 @@ describe('game class tests', () => {
       let removedPlayer = game.removePlayer(players[0].id);
       if (!removedPlayer) throw new Error('player doesn\'t exist in game!');
       expect(removedPlayer.currentGame).toBe(null);
+    });
+
+    it('remove last player ends game', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);;
+      game.running = true;
+      game.removePlayer(players[0].id);
+      game.removePlayer(players[1].id);
+
+      expect(game.completed).toBe(true);
+      expect(game.running).toBe(false);
     });
 
     it('game start returns null game response payload', async () => {
@@ -215,7 +225,6 @@ describe('game class tests', () => {
   });
 
   describe('closing and ending', () => {
-    it.todo('closing the game sets running to false');
     it('end game sets completed to false', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
       game.end();

@@ -66,6 +66,16 @@ describe('game manager tests', () => {
     });
   }
 
+  let leaveGameFactory = (clientSocket: ClientSocket) => {
+    return new Promise<ManagerResponse>((resolve, reject) => {
+      let timeout = setTimeout(() => reject('timeout'), 200);
+      clientSocket.emit('manager action', 'leave game', null, (response: ManagerResponse) => {
+        clearInterval(timeout);
+        resolve(response);
+      });
+    });
+  }
+
   let pingPromiseFactory = (clientSocket: ClientSocket) => {
     return new Promise<ManagerResponse>((resolve, reject) => {
       let timeout = setTimeout(() => reject('timeout'), 200);
@@ -76,27 +86,10 @@ describe('game manager tests', () => {
     });
   }
 
-  let responsePromiseFactory = async (clientSocket: ClientSocket) => { // helper function for game responses
-    let updatePromise = new Promise<ManagerResponse>((resolve, reject) => {
-      clientSocket.once('game update', (response: ManagerResponse) => {
-        if (response.error) {
-          reject(response);
-        } else {
-          resolve(response)
-        }
-      });
-    });
-    return updatePromise;
-  }
-
   let managerResponsePromiseFactory = async (clientSocket: ClientSocket) => { // helper function for game responses
-    let updatePromise = new Promise<ManagerResponse>((resolve, reject) => {
+    let updatePromise = new Promise<ManagerResponse>((resolve) => {
       clientSocket.once('manager response', (response: ManagerResponse) => {
-        if (response.error) {
-          reject(response);
-        } else {
-          resolve(response)
-        }
+        resolve(response);
       });
     });
     return updatePromise;
@@ -290,6 +283,18 @@ describe('game manager tests', () => {
         let response = await createGameFactory(clientSockets[0], 'Game 1');
         expect(response.error).toBe(true);
       });
+
+      it('cannot create game if player does not exist', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+        let player = gameManager.playersMap.get(clientSockets[0].id);
+        if (!player) throw new Error('player does not exist!');
+        gameManager.playersMap.delete(player.id);
+        let response = await createGameFactory(clientSockets[0], 'Game name shouldnt matter');
+
+        expect(response.type).toBe('does not exist');
+        expect(response.payload).toBe(player.id);
+        expect(response.error).toBe(true);
+      });
     });
 
     describe('event join game', () => {
@@ -352,6 +357,18 @@ describe('game manager tests', () => {
         expect(response1.error).toBe(false);
         expect(response2.error).toBe(true);
       });
+
+      it('cannot join game if player does not exist', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+        let player = gameManager.playersMap.get(clientSockets[0].id);
+        if (!player) throw new Error('player does not exist!');
+        gameManager.playersMap.delete(player.id);
+        let response = await joinGameFactory(clientSockets[0], 'Game name shouldnt matter');
+
+        expect(response.type).toBe('does not exist');
+        expect(response.payload).toBe(player.id);
+        expect(response.error).toBe(true);
+      });
     });
 
     describe('event player info', () => {
@@ -362,6 +379,56 @@ describe('game manager tests', () => {
         let response = await responsePromise;
         expect(response.payload.id).toBe(clientSockets[0].id);
         expect(response.payload.inGame).toBe(false);
+      });
+
+      it('cannot get info if player does not exist', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+        let player = gameManager.playersMap.get(clientSockets[0].id);
+        if (!player) throw new Error('player does not exist!');
+        gameManager.playersMap.delete(player.id);
+        let responsePromise = managerResponsePromiseFactory(clientSockets[0]);
+        clientSockets[0].emit('manager action', 'player info');
+        let response = await responsePromise;
+
+        expect(response.type).toBe('does not exist');
+        expect(response.payload).toBe(player.id);
+        expect(response.error).toBe(true);
+      });
+    });
+
+    describe('event leave game', () => {
+      it('leave game while in game leaves game', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        let newGame = new Game('Direct Set Game', io)
+        gameManager.gamesMap.set('Direct Set Game', newGame);
+        await joinGameFactory(clientSockets[0], 'Direct Set Game');
+        await joinGameFactory(clientSockets[1], 'Direct Set Game');
+        let response = await leaveGameFactory(clientSockets[0]);
+        expect(newGame.playerManager.getCount()).toBe(1);
+        expect(gameManager.playersMap.get(clientSockets[0].id)?.inGame).toBe(false);
+        expect(gameManager.playersMap.get(clientSockets[0].id)?.currentGame).toBe(null);
+
+        expect(response.type).toBe('leave game');
+        expect(response.error).toBe(false);
+        expect(response.payload).toBe('Direct Set Game');
+      });
+
+      it('cannot leave game while not in game', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        let response = await leaveGameFactory(clientSockets[0]);
+        expect(response.type).toBe('leave game');
+        expect(response.error).toBe(true);
+      });
+
+      it('cannot leave game if player does not exist', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+        let player = gameManager.playersMap.get(clientSockets[0].id);
+        if (!player) throw new Error('player does not exist!');
+        gameManager.playersMap.delete(player.id);
+        let response = await leaveGameFactory(clientSockets[0]);
+        expect(response.type).toBe('does not exist');
+        expect(response.payload).toBe(player.id);
+        expect(response.error).toBe(true);
       });
     });
   });
@@ -689,276 +756,6 @@ describe('game manager tests', () => {
       gameManager.close();
       await sleepFactory(200);
       expect(gameManager.matchmakingQueue).toStrictEqual([]);
-    });
-
-    it.todo('closing clears queue matchmaking loop');
-  });
-
-  describe('concurrent tictactoe games with multiple sockets', () => {
-    it('full game set 1', async () => {
-      // Two games, first has errors and wins, second ends on a mark
-      [clientSockets, serverSockets] = await createSocketPairs(io, port, 4);
-      let DELAY = 100;
-      let game1Promise = new Promise<ManagerResponse>(async resolve => {
-        // direct game, repeated actions/moving out of turn
-
-        await createGameFactory(clientSockets[0], 'Game 1', 'tictactoe');
-        await joinGameFactory(clientSockets[1], 'Game 1');
-
-        let startResponsePromise = responsePromiseFactory(clientSockets[0]);
-        clientSockets[0].emit('game action', 'tictactoe start');
-        await startResponsePromise;
-
-
-        clientSockets[0].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
-        await sleepFactory(DELAY);
-
-        // repeated
-        clientSockets[0].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
-        await sleepFactory(DELAY);
-
-        // mark existing
-        clientSockets[1].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
-        await sleepFactory(DELAY);
-
-        clientSockets[1].emit('game action', 'tictactoe mark', { x: 0, y: 1 });
-        await sleepFactory(DELAY);
-
-        // repeated
-        clientSockets[1].emit('game action', 'tictactoe mark', { x: 0, y: 1 });
-        await sleepFactory(DELAY);
-
-        clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
-        await sleepFactory(DELAY);
-
-        // mark existing
-        clientSockets[1].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
-        await sleepFactory(DELAY);
-
-        clientSockets[1].emit('game action', 'tictactoe mark', { x: 2, y: 2 });
-        await sleepFactory(DELAY);
-
-        clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 0 });
-        await sleepFactory(DELAY);
-
-        clientSockets[1].emit('game action', 'tictactoe mark', { x: 2, y: 1 });
-        await sleepFactory(DELAY);
-
-        // repeated
-        clientSockets[1].emit('game action', 'tictactoe mark', { x: 2, y: 1 });
-        await sleepFactory(DELAY);
-
-        let responsePromise = responsePromiseFactory(clientSockets[0]);
-        clientSockets[0].emit('game action', 'tictactoe mark', { x: 2, y: 0 });
-        let response = await responsePromise;
-        resolve(response);
-      });
-
-      let game2Promise = new Promise<ManagerResponse>(async resolve => {
-        // direct game, repeated actions/moving out of turn
-
-        await createGameFactory(clientSockets[2], 'Game 2', 'tictactoe');
-        await joinGameFactory(clientSockets[3], 'Game 2');
-
-        let startResponsePromise = responsePromiseFactory(clientSockets[2]);
-        clientSockets[2].emit('game action', 'tictactoe start');
-        await startResponsePromise;
-
-        clientSockets[2].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
-        await sleepFactory(DELAY);
-
-        clientSockets[3].emit('game action', 'tictactoe mark', { x: 0, y: 1 });
-        await sleepFactory(DELAY);
-
-        clientSockets[2].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
-        await sleepFactory(DELAY);
-
-        clientSockets[3].emit('game action', 'tictactoe mark', { x: 2, y: 2 });
-        await sleepFactory(DELAY);
-
-        clientSockets[2].emit('game action', 'tictactoe mark', { x: 1, y: 0 });
-        await sleepFactory(DELAY);
-
-        clientSockets[3].emit('game action', 'tictactoe mark', { x: 2, y: 1 });
-        await sleepFactory(DELAY);
-
-        let responsePromise = responsePromiseFactory(clientSockets[2]);
-        clientSockets[2].emit('game action', 'tictactoe mark', { x: 0, y: 2 });
-        let response = await responsePromise;
-        resolve(response);
-      });
-
-      let gameResponses = await Promise.all([game1Promise, game2Promise]);
-      expect(gameResponses[0].payload.winner).toBe('o');
-      expect(gameResponses[0].type).toBe('win');
-      expect(gameResponses[1].type).toBe('mark');
-    });
-
-    it('full game set 2', async () => {
-      // 5 of the same game played out with different sockets
-      [clientSockets, serverSockets] = await createSocketPairs(io, port, 10);
-      let DELAY = 100;
-      let duplicateGameTestFactory = (name: string, i: number, j: number) => {
-        return new Promise<ManagerResponse>(async resolve => {
-          // direct game, repeated actions/moving out of turn
-
-          await createGameFactory(clientSockets[i], name, 'tictactoe');
-          await joinGameFactory(clientSockets[j], name);
-
-          let startResponsePromise = responsePromiseFactory(clientSockets[i]);
-          clientSockets[i].emit('game action', 'tictactoe start');
-          await startResponsePromise;
-
-          clientSockets[i].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
-          await sleepFactory(DELAY);
-
-          // repeated
-          clientSockets[i].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
-          await sleepFactory(DELAY);
-
-          // mark existing
-          clientSockets[j].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
-          await sleepFactory(DELAY);
-
-          clientSockets[j].emit('game action', 'tictactoe mark', { x: 0, y: 1 });
-          await sleepFactory(DELAY);
-
-          // repeated
-          clientSockets[j].emit('game action', 'tictactoe mark', { x: 0, y: 1 });
-          await sleepFactory(DELAY);
-
-          clientSockets[i].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
-          await sleepFactory(DELAY);
-
-          // mark existing
-          clientSockets[j].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
-          await sleepFactory(DELAY);
-
-          clientSockets[j].emit('game action', 'tictactoe mark', { x: 2, y: 2 });
-          await sleepFactory(DELAY);
-
-          clientSockets[i].emit('game action', 'tictactoe mark', { x: 1, y: 0 });
-          await sleepFactory(DELAY);
-
-          clientSockets[j].emit('game action', 'tictactoe mark', { x: 2, y: 1 });
-          await sleepFactory(DELAY);
-
-          // repeated
-          clientSockets[j].emit('game action', 'tictactoe mark', { x: 2, y: 1 });
-          await sleepFactory(DELAY);
-
-          let responsePromise = responsePromiseFactory(clientSockets[i]);
-          clientSockets[i].emit('game action', 'tictactoe mark', { x: 2, y: 0 });
-          let response = await responsePromise;
-          resolve(response);
-        });
-      }
-
-      let responsePromises = [
-        duplicateGameTestFactory('Game 1', 0, 1),
-        duplicateGameTestFactory('Game 2', 2, 3),
-        duplicateGameTestFactory('Game 3', 4, 5),
-        duplicateGameTestFactory('Game 4', 6, 7),
-        duplicateGameTestFactory('Game 5', 8, 9),
-      ];
-      let responses = await Promise.all(responsePromises);
-      responses.forEach(response => {
-        expect(response.payload.winner).toBe('o');
-        expect(response.type).toBe('win');
-      });
-    });
-
-    it('matchmake queue sets', async () => {
-      let DELAY = 50;
-      [clientSockets, serverSockets] = await createSocketPairs(io, port, 5);
-      // Promises are awaited sequentially to ensure order, (vs Promise.all([]))
-      for (let i = 0; i < clientSockets.length; i++) {
-        await queuePromiseFactory(clientSockets[i]);
-      }
-      gameManager.matchmakePlayersInQueue();
-      gameManager.matchmakePlayersInQueue();
-      expect(gameManager.matchmakingQueue).toStrictEqual([clientSockets[4].id]);
-      let game1Promise = new Promise<ManagerResponse>(async resolve => {
-        let gameName = clientSockets[0].id + clientSockets[1].id;
-        let start = gameManager.gamesMap.get(gameName)?.start();
-
-        clientSockets[0].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
-        await sleepFactory(DELAY);
-
-        // repeated
-        clientSockets[0].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
-        await sleepFactory(DELAY);
-
-        // mark existing
-        clientSockets[1].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
-        await sleepFactory(DELAY);
-
-        clientSockets[1].emit('game action', 'tictactoe mark', { x: 0, y: 1 });
-        await sleepFactory(DELAY);
-
-        // repeated
-        clientSockets[1].emit('game action', 'tictactoe mark', { x: 0, y: 1 });
-        await sleepFactory(DELAY);
-
-        clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
-        await sleepFactory(DELAY);
-
-        // mark existing
-        clientSockets[1].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
-        await sleepFactory(DELAY);
-
-        clientSockets[1].emit('game action', 'tictactoe mark', { x: 2, y: 2 });
-        await sleepFactory(DELAY);
-
-        clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 0 });
-        await sleepFactory(DELAY);
-
-        clientSockets[1].emit('game action', 'tictactoe mark', { x: 2, y: 1 });
-        await sleepFactory(DELAY);
-
-        // repeated
-        clientSockets[1].emit('game action', 'tictactoe mark', { x: 2, y: 1 });
-        await sleepFactory(DELAY);
-
-        let responsePromise = responsePromiseFactory(clientSockets[0]);
-        clientSockets[0].emit('game action', 'tictactoe mark', { x: 2, y: 0 });
-        let response = await responsePromise;
-        resolve(response);
-      });
-
-      let game2Promise = new Promise<ManagerResponse>(async resolve => {
-        // direct game, repeated actions/moving out of turn
-        let gameName = clientSockets[0].id + clientSockets[1].id;
-        gameManager.gamesMap.get(gameName)?.start();
-
-        clientSockets[2].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
-        await sleepFactory(DELAY);
-
-        clientSockets[3].emit('game action', 'tictactoe mark', { x: 0, y: 1 });
-        await sleepFactory(DELAY);
-
-        clientSockets[2].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
-        await sleepFactory(DELAY);
-
-        clientSockets[3].emit('game action', 'tictactoe mark', { x: 2, y: 2 });
-        await sleepFactory(DELAY);
-
-        clientSockets[2].emit('game action', 'tictactoe mark', { x: 1, y: 0 });
-        await sleepFactory(DELAY);
-
-        clientSockets[3].emit('game action', 'tictactoe mark', { x: 2, y: 1 });
-        await sleepFactory(DELAY);
-
-        let responsePromise = responsePromiseFactory(clientSockets[2]);
-        clientSockets[2].emit('game action', 'tictactoe mark', { x: 0, y: 2 });
-        let response = await responsePromise;
-        resolve(response);
-      });
-
-      let gameResponses = await Promise.all([game1Promise, game2Promise]);
-      expect(gameResponses[0].payload.winner).toBe('o');
-      expect(gameResponses[0].type).toBe('win');
-      expect(gameResponses[1].type).toBe('mark');
     });
   });
 });
