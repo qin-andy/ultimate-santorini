@@ -1,4 +1,5 @@
 import { io } from "socket.io-client";
+import { GameResponse, marking } from "../types";
 
 // const socket = io(''); // intentionally blank
 const socket = io('http://localhost:3001');
@@ -29,5 +30,6 @@ export const tictactoeMark = (x: number, y: number) => {
     resolve();
   });
 }
+
 
 export default socket;

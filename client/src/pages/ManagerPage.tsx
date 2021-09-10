@@ -1,13 +1,31 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button, Col, Row } from 'react-bootstrap';
 
 import DefaultPage from './DefaultPage';
 import socket, { createGame, joinGame, tictactoeStart } from '../services/socket';
 import Board from '../tictactoe/Board';
-import { useGameResponse } from '../hooks/hooks';
+import { useAppDispatch } from '../hooks/hooks';
+import { GameResponse, marking } from '../types';
 
 const ManagerPage = () => {
-  let gameResponse = useGameResponse(socket);
+  // let gameResponse = useGameResponse(socket);
+
+  const dispatch = useAppDispatch();
+  useEffect(() => {
+    socket.on('game update', (response: GameResponse) => {
+      console.log(response);
+      if (response.type === 'start success') {
+        let board: marking[] = new Array<marking>(response.payload.x * response.payload.y);
+        board.fill('*');
+        let payload = { x: response.payload.x, y: response.payload.y, board }
+        dispatch({ type: 'tictactoe/gameStarted', payload });
+      } else if (response.type === 'mark') {
+        dispatch({ type: 'tictactoe/boardUpdated', payload: response.payload });
+      }
+    });
+    return () => { socket.off('game update') };
+  }, []);
+
   return (
     <DefaultPage>
       <Row className='w-100'>
@@ -18,13 +36,13 @@ const ManagerPage = () => {
           <Button variant='outline-primary' onClick={() => tictactoeStart()}>Start</Button>
         </Col>
         <Col sm={4}>
-          <div className='p-0 m-0'>
+          {/* <div className='p-0 m-0'>
             <h2>Latest Response</h2>
             <p>{'Type: ' + gameResponse?.type}</p>
             <p>{'Error: ' + gameResponse?.error}</p>
             <p>{'Payload: ' + gameResponse?.payload}</p>
             <p>{'Message: ' + gameResponse?.message}</p>
-          </div>
+          </div> */}
         </Col>
         <Col sm={4} className='d-flex flex-column align-items-center'>
           <h1>Board</h1>

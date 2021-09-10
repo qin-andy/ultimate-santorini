@@ -81,6 +81,7 @@ export class GameManager {
         message: 'ping response is pong'
       }
       event.acknowledger(response);
+      return response;
     };
 
     let joinQueueHandler = (event: ManagerEvent) => {
@@ -107,6 +108,7 @@ export class GameManager {
         response.error = true;
         event.acknowledger(response);
       }
+      return response;
     };
 
     let joinGameHandler = (event: ManagerEvent) => {
@@ -127,6 +129,7 @@ export class GameManager {
         response.error = true;
         event.acknowledger(response);
       }
+      return response;
     };
 
     let createGameHandler = (event: ManagerEvent) => {
@@ -160,7 +163,6 @@ export class GameManager {
     this.eventHandlerMap.set('join queue', joinQueueHandler);
     this.eventHandlerMap.set('join game', joinGameHandler);
     this.eventHandlerMap.set('create game', createGameHandler);
-
   }
 
   attachListeners(io: Server, dev: boolean = false) {
@@ -199,7 +201,10 @@ export class GameManager {
 
   handleEvent(event: ManagerEvent) {
     let handler = this.eventHandlerMap.get(event.type);
-    if (handler) handler(event);
+    if (handler) {
+      let response = handler(event);
+      this.io.to(event.id).emit('manager response', response);
+    }
   }
 
   close() {

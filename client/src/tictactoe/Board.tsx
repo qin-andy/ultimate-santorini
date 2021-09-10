@@ -4,7 +4,7 @@ import { Col, Row } from 'react-bootstrap';
 import Cell from './Cell';
 import './tictactoe.scss'
 import { ReactElement } from 'react';
-import { useTictactoeBoard } from '../hooks/hooks';
+import { useAppSelector } from '../hooks/hooks';
 import socket, { tictactoeMark } from '../services/socket';
 
 interface BoardProps {
@@ -13,6 +13,9 @@ interface BoardProps {
 }
 
 const Board = (props: BoardProps) => {
+  let board: marking[] = useAppSelector(state => state.tictactoe.board);
+  console.log(board);
+
   function onCellClick(x: number, y: number) {
     console.log(x, y);
     if (board) console.log(board[y * props.y + x]);
@@ -21,6 +24,7 @@ const Board = (props: BoardProps) => {
 
   function renderData(data: marking[]): ReactElement[] {
     let rows: ReactElement[] = [];
+    if (!data) return rows;
     for (let i = 0; i < props.y; i++) {
       let cells: ReactElement[] = [];
       for (let j = 0; j < props.x; j++) {
@@ -42,8 +46,6 @@ const Board = (props: BoardProps) => {
     }
     return rows;
   }
-
-  let board = useTictactoeBoard(socket);
 
   return (
     <div className='m-3 tictactoe-grid'>

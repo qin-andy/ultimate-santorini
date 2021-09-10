@@ -44,16 +44,16 @@ export class TicTacToeGame extends Game {
 
   // tic tac toe logic
   start(x = 3, y = 3): GameResponse {
-    let response = {
+    let response: GameResponse = {
       error: false,
-      payload: true,
+      payload: {x, y},
       type: 'start success',
       message: 'Game started!'
     }
 
     if (this.running || this.completed) {
       response.error = true;
-      response. payload = false;
+      response.payload = null;
       response.type = 'start fail';
       response.message = 'game already started or completed';
       return response;
