@@ -73,6 +73,12 @@ export class Game {
     player?.socket.leave(this.roomId);
     player?.socket.removeAllListeners('game action');
     if (player) player.currentGame = null;
+    if (this.running) this.io.to(this.roomId).emit('game update', {
+      error: false,
+      type: 'player disconnect',
+      payload: { name: player?.name, id: player?.id },
+      message: 'player disconnected!'
+    });
     return this.playerManager.removePlayer(id);
   }
 

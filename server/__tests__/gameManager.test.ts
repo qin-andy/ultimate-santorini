@@ -89,6 +89,19 @@ describe('game manager tests', () => {
     return updatePromise;
   }
 
+  let managerResponsePromiseFactory = async (clientSocket: ClientSocket) => { // helper function for game responses
+    let updatePromise = new Promise<ManagerResponse>((resolve, reject) => {
+      clientSocket.once('manager response', (response: ManagerResponse) => {
+        if (response.error) {
+          reject(response);
+        } else {
+          resolve(response)
+        }
+      });
+    });
+    return updatePromise;
+  }
+
   let queuePromiseFactory = (clientSocket: ClientSocket) => {
     return new Promise<ManagerResponse>((resolve, reject) => {
       let timeout = setTimeout(() => reject('timeout'), 200);
@@ -340,9 +353,18 @@ describe('game manager tests', () => {
         expect(response2.error).toBe(true);
       });
     });
+
+    describe('event player info', () => {
+      it('player info returns correct id and ingame info 1', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+        let responsePromise = managerResponsePromiseFactory(clientSockets[0]);
+        clientSockets[0].emit('manager action', 'player info');
+        let response = await responsePromise;
+        expect(response.payload.id).toBe(clientSockets[0].id);
+        expect(response.payload.inGame).toBe(false);
+      });
+    });
   });
-
-
 
   describe('matchmatking queue', () => {
     describe('join queue event through socket emit', () => {
@@ -767,7 +789,7 @@ describe('game manager tests', () => {
       });
 
       let gameResponses = await Promise.all([game1Promise, game2Promise]);
-      expect(gameResponses[0].payload).toBe('o');
+      expect(gameResponses[0].payload.winner).toBe('o');
       expect(gameResponses[0].type).toBe('win');
       expect(gameResponses[1].type).toBe('mark');
     });
@@ -841,7 +863,7 @@ describe('game manager tests', () => {
       ];
       let responses = await Promise.all(responsePromises);
       responses.forEach(response => {
-        expect(response.payload).toBe('o');
+        expect(response.payload.winner).toBe('o');
         expect(response.type).toBe('win');
       });
     });
@@ -934,7 +956,7 @@ describe('game manager tests', () => {
       });
 
       let gameResponses = await Promise.all([game1Promise, game2Promise]);
-      expect(gameResponses[0].payload).toBe('o');
+      expect(gameResponses[0].payload.winner).toBe('o');
       expect(gameResponses[0].type).toBe('win');
       expect(gameResponses[1].type).toBe('mark');
     });

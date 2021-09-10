@@ -117,7 +117,8 @@ describe('game class tests', () => {
     });
 
     it('game start returns null game response payload', async () => {
-      expect(game.start().type).toBe('null');
+      let response = game.start();
+      expect(response.payload).toBe(null);
     });
   });
 
@@ -189,6 +190,27 @@ describe('game class tests', () => {
         });
       });
       expect(await mirrorPromise).toBe('no message');
+    });
+
+    it('player disconnected while game is running emits to other players', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 3);
+      function responsePromiseFactory(clientSocket: ClientSocket) {
+        return new Promise<GameResponse>((resolve, reject) => {
+          let timeout = setTimeout(() => reject('timeout'), 200);
+          clientSocket.once('game update', (response: GameResponse) => {
+            clearTimeout(timeout);
+            resolve(response);
+          });
+        });
+      }
+      game.running = true;
+      let [response1, response2] = [responsePromiseFactory(clientSockets[0]), responsePromiseFactory(clientSockets[1])];
+      let expectedId = clientSockets[2].id;
+      game.removePlayer(clientSockets[2].id);
+      let responses = await Promise.all([response1, response2]);
+      expect(responses[0].type).toBe('player disconnect');
+      expect(responses[1].type).toBe('player disconnect');
+      expect(responses[0].payload.id).toBe(expectedId);
     });
   });
 

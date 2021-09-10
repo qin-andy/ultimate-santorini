@@ -25,11 +25,12 @@ export class TicTacToeGame extends Game {
         this.io.to(event.id).emit('game update', response);
       }
     }
+
     const startHandler = (event: GameEvent) => {
       let response = this.start();
-      if (response.payload) { // success?
+      if (response.payload) {
         this.io.to(this.roomId).emit('game update', response);
-      } else { // error
+      } else {
         this.io.to(event.id).emit('game update', response);
       }
     }
@@ -46,17 +47,18 @@ export class TicTacToeGame extends Game {
   start(x = 3, y = 3): GameResponse {
     let response: GameResponse = {
       error: false,
-      payload: {x, y},
+      payload: { x, y },
       type: 'start success',
       message: 'Game started!'
     }
 
     if (this.running || this.completed) {
-      response.error = true;
-      response.payload = null;
-      response.type = 'start fail';
-      response.message = 'game already started or completed';
-      return response;
+      return {
+        error: true,
+        payload: null,
+        type: 'start fail',
+        message: 'game already started or completed'
+      }
     }
 
     if (this.playerManager.getCount() !== 2) {
@@ -88,25 +90,23 @@ export class TicTacToeGame extends Game {
   mark(id: string, x: number, y: number): GameResponse {
     // game must be running
     if (!this.running) {
-      let error: GameResponse = {
+      return {
         error: true,
         payload: [x, y],
-        type: 'not running', // TODO : square error?
-        message: 'Game is not running!' // TODO : include board dimensions and squares
+        type: 'not running',
+        message: 'Game is not running!'
       }
-      return error;
     }
 
     // coordinate must exist on board
     let squareIndex = this.getBoardIndex(x, y);
     if (squareIndex >= this.board.length) {
-      let error: GameResponse = {
+      return {
         error: true,
-        payload: [x, y],
+        payload: {x, y},
         type: 'out of bounds', // TODO : square error?
-        message: 'Invalid square' // TODO : include board dimensions and squares
+        message: 'Invalid square, out of bounds' // TODO : include board dimensions and squares
       }
-      return error;
     }
 
     // It must be the player's turn to mark
@@ -141,10 +141,13 @@ export class TicTacToeGame extends Game {
     }
     // winner
     if (this.checkWin(x, y)) {
-      response.message = (this.board[squareIndex] + ' has won!');
-      response.type = 'win';
-      response.payload = this.board[squareIndex];
       this.end();
+      return {
+        error: false,
+        payload: { winner: this.board[squareIndex], board: this.board },
+        type: 'win',
+        message: this.board[squareIndex] + ' has won!',
+      }
     }
     return response;
   }

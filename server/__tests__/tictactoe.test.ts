@@ -54,7 +54,7 @@ describe('tictactoe tests', () => {
   });
 
   let responsePromiseFactory = async (i: number) => { // helper function for game responses
-    let updatePromise = new Promise<GameResponse>((resolve, reject) => {
+    let updatePromise = new Promise<GameResponse>((resolve) => {
       clientSockets[i].once('game update', (response: GameResponse) => {
         resolve(response);
       });
@@ -222,7 +222,7 @@ describe('tictactoe tests', () => {
         let response = game.mark(clientSockets[0].id, 2, 0);
         expect(response.error).toBe(false);
         expect(response.type).toBe('win');
-        expect(response.payload).toBe('o');
+        expect(response.payload.winner).toBe('o');
       });
 
       it('mark board winning mark wins game x', async () => {
@@ -237,7 +237,7 @@ describe('tictactoe tests', () => {
         let response = game.mark(clientSockets[1].id, 0, 0);
         expect(response.error).toBe(false);
         expect(response.type).toBe('win');
-        expect(response.payload).toBe('x');
+        expect(response.payload.winner).toBe('x');
       });
 
       it('mark board when its not your turn gives "turn" error', async () => {
@@ -264,7 +264,7 @@ describe('tictactoe tests', () => {
         let response = game.mark(clientSockets[0].id, 5, 5);
         expect(response.error).toBe(true);
         expect(response.type).toBe('out of bounds');
-        expect(response.payload).toStrictEqual([5, 5]);
+        expect(response.payload).toStrictEqual({x: 5, y: 5});
       });
 
       it('mark game with running false gives "not running" error', async () => {
@@ -362,7 +362,7 @@ describe('tictactoe tests', () => {
         game.start(1, 1);
         let response = game.mark(clientSockets[0].id, 2, 3);
         expect(response.error).toBe(true);
-        expect(response.payload).toStrictEqual([2, 3]);
+        expect(response.payload).toStrictEqual({x: 2, y: 3});
         expect(response.type).toBe('out of bounds');
       });
 
@@ -371,7 +371,7 @@ describe('tictactoe tests', () => {
         game.start(4, 2);
         let response = game.mark(clientSockets[0].id, 24, 3);
         expect(response.error).toBe(true);
-        expect(response.payload).toStrictEqual([24, 3]);
+        expect(response.payload).toStrictEqual({x: 24, y: 3});
         expect(response.type).toBe('out of bounds');
       });
     });
@@ -389,34 +389,6 @@ describe('tictactoe tests', () => {
       let boardPromise = boardPromiseFactory(0);
       clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
       let board = await boardPromise;
-      expect(board).toStrictEqual(expectedBoard);
-    });
-
-    it('multiple board marks through events has correct board', async () => {
-      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
-      game.start();
-      let expectedBoard = [
-        '*', '*', '*',
-        'x', 'o', '*',
-        'o', 'x', '*'
-      ];
-      let board: string[];
-
-      let boardPromise = boardPromiseFactory(0);
-      clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
-      board = await boardPromise;
-
-      boardPromise = boardPromiseFactory(1);
-      clientSockets[1].emit('game action', 'tictactoe mark', { x: 0, y: 1 });
-      board = await boardPromise;
-
-      boardPromise = boardPromiseFactory(0);
-      clientSockets[0].emit('game action', 'tictactoe mark', { x: 0, y: 2 });
-      board = await boardPromise;
-
-      boardPromise = boardPromiseFactory(1);
-      clientSockets[1].emit('game action', 'tictactoe mark', { x: 1, y: 2 });
-      board = await boardPromise;
       expect(board).toStrictEqual(expectedBoard);
     });
 
@@ -439,7 +411,7 @@ describe('tictactoe tests', () => {
       let response2 = await startResponsePromise2;
       let expectedResponse = {
         error: false,
-        payload: true,
+        payload: {x: 3, y: 3},
         type: 'start success',
         message: 'Game started!'
       }
@@ -474,94 +446,56 @@ describe('tictactoe tests', () => {
     });
 
     it('full game 1', async () => {
-      // direct game, no errors
-      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
-      let startResponsePromise = responsePromiseFactory(0);
-      clientSockets[0].emit('game action', 'tictactoe start');
-      await startResponsePromise;
-
-      let boardPromise = boardPromiseFactory(0);
-      clientSockets[0].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
-      await boardPromise;
-
-      boardPromise = boardPromiseFactory(1);
-      clientSockets[1].emit('game action', 'tictactoe mark', { x: 0, y: 1 });
-      await boardPromise;
-
-      boardPromise = boardPromiseFactory(0);
-      clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
-      await boardPromise;
-
-      boardPromise = boardPromiseFactory(1);
-      clientSockets[1].emit('game action', 'tictactoe mark', { x: 2, y: 2 });
-      await boardPromise;
-
-      boardPromise = boardPromiseFactory(0);
-      clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 0 });
-      await boardPromise;
-
-      boardPromise = boardPromiseFactory(1);
-      clientSockets[1].emit('game action', 'tictactoe mark', { x: 2, y: 1 });
-      await boardPromise;
-
-      let responsePromise = responsePromiseFactory(0);
-      clientSockets[0].emit('game action', 'tictactoe mark', { x: 2, y: 0 });
-      let response = await responsePromise;
-
-      expect(response.payload).toBe('o');
-      expect(response.type).toBe('win');
-    });
-
-    it('full game 2', async () => {
       // direct game, repeated actions/moving out of turn
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
       let startResponsePromise = responsePromiseFactory(0);
       clientSockets[0].emit('game action', 'tictactoe start');
       await startResponsePromise;
+      let DELAY = 100;
 
       clientSockets[0].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
-      await sleepFactory(200);
+      await sleepFactory(DELAY);
 
       // repeated
       clientSockets[0].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
-      await sleepFactory(200);
+      await sleepFactory(DELAY);
 
       // mark existing
       clientSockets[1].emit('game action', 'tictactoe mark', { x: 0, y: 0 });
-      await sleepFactory(200);
+      await sleepFactory(DELAY);
 
       clientSockets[1].emit('game action', 'tictactoe mark', { x: 0, y: 1 });
-      await sleepFactory(200);
+      await sleepFactory(DELAY);
 
       // repeated
       clientSockets[1].emit('game action', 'tictactoe mark', { x: 0, y: 1 });
-      await sleepFactory(200);
+      await sleepFactory(DELAY);
 
       clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
-      await sleepFactory(200);
+      await sleepFactory(DELAY);
 
       // mark existing
       clientSockets[1].emit('game action', 'tictactoe mark', { x: 1, y: 1 });
-      await sleepFactory(200);
+      await sleepFactory(DELAY);
 
       clientSockets[1].emit('game action', 'tictactoe mark', { x: 2, y: 2 });
-      await sleepFactory(200);
+      await sleepFactory(DELAY);
 
       clientSockets[0].emit('game action', 'tictactoe mark', { x: 1, y: 0 });
-      await sleepFactory(200);
+      await sleepFactory(DELAY);
 
       clientSockets[1].emit('game action', 'tictactoe mark', { x: 2, y: 1 });
-      await sleepFactory(200);
+      await sleepFactory(DELAY);
 
       // repeated
       clientSockets[1].emit('game action', 'tictactoe mark', { x: 2, y: 1 });
-      await sleepFactory(200);
+      await sleepFactory(DELAY);
 
       let responsePromise = responsePromiseFactory(0);
       clientSockets[0].emit('game action', 'tictactoe mark', { x: 2, y: 0 });
       let response = await responsePromise;
 
-      expect(response.payload).toBe('o');
+      expect(response.payload.winner).toBe('o');
       expect(response.type).toBe('win');
     });
   });

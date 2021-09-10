@@ -159,10 +159,34 @@ export class GameManager {
       }
     };
 
+    let playerInfoHandler = (event: ManagerEvent) => {
+      let player = this.playersMap.get(event.id);
+      if (!player) return {
+        error: true,
+        type: 'player info',
+        payload: event.id,
+        message: 'player id does not exist!'
+      }
+
+      let payload = {
+        name: player.name,
+        id: player.id,
+        inGame: player.inGame,
+      }
+      return {
+        error: false,
+        type: 'player info',
+        payload,
+        message: ''
+      }
+    }
+
     this.eventHandlerMap.set('ping', pingHandler);
     this.eventHandlerMap.set('join queue', joinQueueHandler);
     this.eventHandlerMap.set('join game', joinGameHandler);
     this.eventHandlerMap.set('create game', createGameHandler);
+    this.eventHandlerMap.set('player info', playerInfoHandler);
+
   }
 
   attachListeners(io: Server, dev: boolean = false) {
