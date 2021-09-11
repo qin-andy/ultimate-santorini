@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { marking } from '../types';
 import { Col, Row } from 'react-bootstrap';
 import Cell from './Cell';
@@ -15,6 +15,13 @@ interface BoardProps {
 const Board = (props: BoardProps) => {
   let board: marking[] = useAppSelector(state => state.tictactoe.board);
   console.log(board);
+
+  useEffect(() => {
+    const xImg = new Image();
+    const oImg = new Image();
+    xImg.src = 'x.svg';
+    oImg.src = 'o.svg';
+  });
 
   function onCellClick(x: number, y: number) {
     console.log(x, y);
@@ -49,9 +56,7 @@ const Board = (props: BoardProps) => {
 
   return (
     <div className='m-3 tictactoe-grid'>
-      {
-        renderData(board)
-      }
+      {renderData(board)}
     </div>
   );
 }

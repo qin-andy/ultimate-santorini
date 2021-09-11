@@ -1,4 +1,12 @@
-$cell-size: 100px;
+$cell-size: 150px;
+$cell-enter-distance: 20vh;
+$cell-enter-duration: 500ms;
+$cell-mark-duration: 200ms;
+
+.tictactoe-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
 
 .tictactoe-cell {
   height: $cell-size;
@@ -7,14 +15,83 @@ $cell-size: 100px;
   border-style: solid;
   border-color: black;
   border-radius: 16px;
+  position: relative;
+  transition: background-color 100ms;
 
   P {
     margin: 0;
     font-size: 8px;
   }
 
-  img {
-    height: $cell-size;
-    width: $cell-size;
+  &:hover {
+    background-color: rgb(164, 173, 189);
+    cursor: pointer;
+  }
+
+
+  &-enter {
+    opacity: 0;
+    transform: translateY($cell-enter-distance) translateX(0px);
+
+    &-active {
+      opacity: 1;
+      transform: translateY(0px) translateX(0px);
+      transition: opacity $cell-enter-duration, transform $cell-enter-duration ease-out;
+    }
+  }
+
+  &-exit {
+    opacity: 1;
+    transform: translateY(0px) translateX(0px);
+    &-active {
+      opacity: 0;
+      transform: translateY(-$cell-enter-distance) translateX(0px);
+      transition: opacity $cell-enter-duration, transform $cell-enter-duration ease-in;
+    }
+  }
+}
+
+
+img.cell-mark {
+  height: $cell-size*0.8;
+  width: $cell-size*0.8;
+  &-enter {
+    opacity: 0;
+    &-active {
+      opacity: 1;
+      transition: opacity $cell-mark-duration;
+    }
+  }
+
+  &-exit {
+    opacity: 1;
+    &-active {
+      opacity: 0;
+      transition: opacity $cell-mark-duration;
+    }
+  }
+}
+
+.box {
+  border-style: solid;
+  border-color: black;
+  border-radius: 32px;
+  height: $cell-size * 2;
+  width: $cell-size * 2;
+
+  &-enter {
+    opacity: 0;
+    &-active {
+      opacity: 1;
+      transition: opacity 300ms;
+    }
+  }
+
+  &-exit {
+    opacity: 1;
+    &-active {
+      opacity: 0;
+      transition: opacity 300ms;
+    }
   }
 }
