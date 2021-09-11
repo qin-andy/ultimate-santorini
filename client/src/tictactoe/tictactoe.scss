@@ -28,26 +28,26 @@ $cell-mark-duration: 200ms;
     cursor: pointer;
   }
 
-
   &-enter {
     opacity: 0;
     transform: translateY($cell-enter-distance) translateX(0px);
+  }
 
-    &-active {
-      opacity: 1;
-      transform: translateY(0px) translateX(0px);
-      transition: opacity $cell-enter-duration, transform $cell-enter-duration ease-out;
-    }
+  &-enter-active {
+    opacity: 1;
+    transform: translateY(0px) translateX(0px);
+    transition: opacity $cell-enter-duration, transform $cell-enter-duration ease-out;
   }
 
   &-exit {
     opacity: 1;
     transform: translateY(0px) translateX(0px);
-    &-active {
-      opacity: 0;
-      transform: translateY(-$cell-enter-distance) translateX(0px);
-      transition: opacity $cell-enter-duration, transform $cell-enter-duration ease-in;
-    }
+  }
+
+  &-exit-active {
+    opacity: 0;
+    transform: translateY(-$cell-enter-distance) translateX(0px);
+    transition: opacity $cell-enter-duration, transform $cell-enter-duration ease-in;
   }
 }
 

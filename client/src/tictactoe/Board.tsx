@@ -8,8 +8,7 @@ import { useAppSelector } from '../hooks/hooks';
 import { tictactoeMark } from '../services/socket';
 
 interface BoardProps {
-  x: number,
-  y: number
+  dimensions: {x: number, y: number}
 }
 
 const Board = (props: BoardProps) => {
@@ -25,20 +24,20 @@ const Board = (props: BoardProps) => {
 
   function onCellClick(x: number, y: number) {
     console.log(x, y);
-    if (board) console.log(board[y * props.y + x]);
+    if (board) console.log(board[y * props.dimensions.x + x]);
     tictactoeMark(x, y);
   }
 
   function renderData(data: marking[]): ReactElement[] {
     let rows: ReactElement[] = [];
-    if (!data) return rows;
-    for (let i = 0; i < props.y; i++) {
+    for (let i = 0; i < props.dimensions.y; i++) {
       let cells: ReactElement[] = [];
-      for (let j = 0; j < props.x; j++) {
+      for (let j = 0; j < props.dimensions.x; j++) {
         cells.push(
-          <Col key={i * props.y + j} className='p-0'>
+          <Col key={i * props.dimensions.y + j} className='p-0'>
             <Cell
-              marking={data[i * props.y + j]}
+              marking={data[i * props.dimensions.x + j]}
+              dimensions={props.dimensions}
               x={j} y={i}
               onClick={onCellClick}
             />

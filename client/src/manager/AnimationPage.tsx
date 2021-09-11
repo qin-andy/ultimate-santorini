@@ -1,23 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Button, Card, Col, Form, ListGroup, Row } from 'react-bootstrap';
-import { CSSTransition } from 'react-transition-group';
-
-import DefaultPage from '../components/DefaultPage';
-import { useAppDispatch } from '../hooks/hooks';
+import React, { useState } from 'react';
+import { Col, Row, Container } from 'react-bootstrap';
 import DummyBoard from '../tictactoe/DummyBoard';
-import { marking } from '../types';
-
 const AnimationPage = () => {
   const [active, setActive] = useState(false);
-  const nodeRef = useRef(null);
   return (
-    <DefaultPage>
+    <Container>
       <Row className='w-100'>
-        <Col className='d-flex flex-column align-items-center'>
-          <DummyBoard x={3} y={3} />
+        <Col className=''>
+          <DummyBoard dimensions={{x: 10, y: 10}} />
         </Col>
       </Row>
-    </DefaultPage>
+    </Container>
+
   );
 }
 

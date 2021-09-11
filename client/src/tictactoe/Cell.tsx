@@ -7,11 +7,14 @@ interface CellProps {
   x: number,
   y: number,
   onClick: Function,
+  dimensions: { x: number, y: number }
   style?: any,
+  active?: boolean,
 }
 
 const Cell = (props: CellProps) => {
   const svgRef = useRef(null);
+  const cellRef = useRef(null);
   const [svg, setSvg] = useState(<img ref={svgRef}></img>);
   const [marked, setMarked] = useState(false);
 
@@ -25,21 +28,31 @@ const Cell = (props: CellProps) => {
   }, [props.marking]);
 
   return (
-    <div
-      className='tictactoe-cell d-flex align-items-center justify-content-center'
-      onClick={() => props.onClick(props.x, props.y)}
-      style={props.style}
+    <CSSTransition
+      ref={cellRef}
+      timeout={500}
+      in={props.active}
+      classNames={'tictactoe-cell'}
+      unmountOnExit
     >
-      <CSSTransition
-        in={marked}
-        timeout={300}
-        classNames={'cell-mark'}
-        nodeRef={svgRef}
-        unmountOnExit
+      <div
+        className='tictactoe-cell d-flex align-items-center justify-content-center'
+        ref={cellRef}
+        onClick={() => props.onClick(props.x, props.y)}
+        style={props.style}
       >
-        {svg}
-      </CSSTransition>
-    </div>
+        <CSSTransition
+          in={marked}
+          timeout={300}
+          classNames={'cell-mark'}
+          nodeRef={svgRef}
+          unmountOnExit
+        >
+          {svg}
+        </CSSTransition>
+      </div>
+    </CSSTransition>
+
   );
 }
 

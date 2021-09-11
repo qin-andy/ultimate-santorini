@@ -7,8 +7,7 @@ interface TictactoeState {
   winner: marking,
   turn: marking,
   board: marking[],
-  x: number,
-  y: number,
+  dimensions: {x: number, y: number},
   latestResponse: GameResponse | null
 }
 
@@ -18,8 +17,7 @@ const initialState: TictactoeState = {
   winner: '*',
   turn: '*',
   board: [],
-  x: 0,
-  y: 0,
+  dimensions: {x: 3, y: 3},
   latestResponse: null
 }
 
@@ -31,8 +29,8 @@ const tictactoeSlice = createSlice({
       state.latestResponse = action.payload;
     },
     gameStarted(state, action) {
-      state.x = action.payload.x;
-      state.y = action.payload.y;
+      state.dimensions.x = action.payload.x;
+      state.dimensions.y = action.payload.y;
       state.board = action.payload.board;
       state.running = true;
     },

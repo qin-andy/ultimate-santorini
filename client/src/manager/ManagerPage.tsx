@@ -86,7 +86,7 @@ const ManagerPage = () => {
         </Col>
         <Col sm={4} className='d-flex flex-column align-items-center'>
           <h1>{gameName ? gameName : 'Waiting to Join Game'}</h1>
-          <Board x={3} y={3} />
+          <Board dimensions={{x: 3, y: 3}} />
           {won ? <h2>Winner: {winner}</h2> : null}
         </Col>
         <Col sm={4} className='d-flex flex-column align-items-center'>
