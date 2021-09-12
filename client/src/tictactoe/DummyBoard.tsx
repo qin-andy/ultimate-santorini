@@ -5,6 +5,7 @@ import Cell from './Cell';
 import './tictactoe.scss'
 import { ReactElement } from 'react';
 import { useAppDispatch, useAppSelector } from '../hooks/hooks';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface BoardProps {
   dimensions: { x: number, y: number }
@@ -13,7 +14,6 @@ interface BoardProps {
 const DummyBoard = (props: BoardProps) => {
   const [turn, setTurn] = useState<marking>('o');
   const [active, setActive] = useState<boolean>(true);
-  const dimensions = useAppSelector(state => state.tictactoe.dimensions);
   let board: marking[] = useAppSelector(state => state.tictactoe.board);
   const dispatch = useAppDispatch();
 
@@ -49,9 +49,9 @@ const DummyBoard = (props: BoardProps) => {
         let cell =
           <Cell
             key={i * props.dimensions.x + j}
-            active={active}
             marking={data[i * props.dimensions.x + j]}
             x={j} y={i}
+            active={active}
             dimensions={props.dimensions}
             onClick={onCellClick}
           />
@@ -64,7 +64,7 @@ const DummyBoard = (props: BoardProps) => {
   return (
     <div className=''>
       <Button onClick={() => {
-        let emptyBoard = Array<marking>(9);
+        let emptyBoard = Array<marking>(props.dimensions.x*props.dimensions.y);
         emptyBoard.fill('*');
         dispatch({ type: 'tictactoe/boardUpdated', payload: emptyBoard });
       }}>Clear</Button>
@@ -76,7 +76,9 @@ const DummyBoard = (props: BoardProps) => {
           display: `grid`,
           gridTemplateColumns: `repeat(${props.dimensions.x}, 1fr)`
         }}>
-          {renderData(board)}
+          <AnimatePresence>
+            {active ? renderData(board) : null}
+          </AnimatePresence>
         </div>
       </div>
     </div>
