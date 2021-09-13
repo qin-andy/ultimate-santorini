@@ -13,8 +13,8 @@ interface BoardProps {
 
 const Board = (props: BoardProps) => {
   const board: marking[] = useAppSelector(state => state.tictactoe.board);
+  const winningSquares = useAppSelector(state => state.tictactoe.winningSquares);
   const inGame = useAppSelector(state => state.manager.inGame);
-  console.log(board);
 
   useEffect(() => {
     const xImg = new Image();
@@ -28,17 +28,26 @@ const Board = (props: BoardProps) => {
     tictactoeMark(x, y);
   }
 
+  let winningIndexes: number[] = [];
+  if (winningSquares) {
+    for (let i = 0; i < winningSquares.length; i++) {
+      let index = winningSquares[i].y * props.dimensions.x + winningSquares[i].x;
+      winningIndexes.push(index);
+    }
+  }
+
   function renderData(data: marking[]): ReactElement[] {
     let cells = [];
     for (let i = 0; i < props.dimensions.y; i++) {
       for (let j = 0; j < props.dimensions.x; j++) {
+        let index = i * props.dimensions.x + j;
         let cell =
           <Cell
-            key={i * props.dimensions.x + j}
-            marking={data[i * props.dimensions.x + j]}
+            key={index}
+            marking={data[index]}
             x={j} y={i}
-            active={inGame}
             dimensions={props.dimensions}
+            winningSquare={winningIndexes.includes(index)}
             onClick={onCellClick}
           />
         cells.push(cell);
@@ -47,13 +56,21 @@ const Board = (props: BoardProps) => {
     return cells;
   }
 
+  let cells = renderData(board);
+  console.log(winningSquares);
+  if (winningSquares) {
+    for (let i = 0; i < winningSquares.length; i++) {
+      let index = winningSquares[i].y * props.dimensions.x + winningSquares[i].x;
+    }
+  }
+
   return (
     <div className='m-3 tictactoe-grid' style={{
       display: `grid`,
       gridTemplateColumns: `repeat(${props.dimensions.x}, 1fr)`
     }}>
       <AnimatePresence>
-        {inGame ? renderData(board) : null}
+        {inGame ? cells : null}
       </AnimatePresence>
     </div>
   );

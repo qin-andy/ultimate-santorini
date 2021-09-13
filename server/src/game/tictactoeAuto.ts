@@ -20,23 +20,26 @@ export class TicTacToeAutoGame extends TicTacToeGame {
   }
 
   // Override, calls end with reset flag as true
-  win(x: number, y: number) {
+  win(x: number, y: number, winningSquares: Array<{ x: number, y: number }>) {
     let squareIndex = this.getBoardIndex(x, y);
     this.end(true);
-    return {
+    let response = {
       error: false,
       payload: {
         board: this.board,
         mark: { x, y },
         winner: this.board[squareIndex],
+        winningSquares
       },
       type: 'win',
       message: this.board[squareIndex] + ' has won!',
     }
+    console.log(response);
+    return response;
   }
 
   // Override, includes reset flag which will reset game
-  end(reset = false, delay = 3000) {
+  end(reset = false, delay = 5000) {
     // console.log('resetting in ' + delay);
     this.running = false;
     if (reset) {

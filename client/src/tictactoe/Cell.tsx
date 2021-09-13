@@ -8,7 +8,8 @@ interface CellProps {
   y: number,
   onClick: Function,
   dimensions: { x: number, y: number }
-  active?: boolean
+  active?: boolean,
+  winningSquare?: boolean
 }
 
 const Cell = (props: CellProps) => {
@@ -56,13 +57,14 @@ const Cell = (props: CellProps) => {
         duration: 0.4,
         delay: delay * 2
       }
-    }
+    },
   }
 
   const markingVariants = {
     marked: {
       opacity: 1, scale: 1, rotate: 0,
       transition: {
+        repeat: 0,
         type: 'spring',
         bounce: 0.5,
         duration: 0.5
@@ -72,6 +74,17 @@ const Cell = (props: CellProps) => {
       opacity: 0, scale: 0.8, rotate: 25,
       transition: {
         duration: 0.2
+      }
+    },
+    winningSquare: {
+      rotate: 360,
+      opacity: 1,
+      scale: 1,
+      transition: {
+        repeat: Infinity,
+        duration: 1.5,
+        type: 'spring',
+        bounce: 0.5
       }
     }
   }
@@ -96,8 +109,8 @@ const Cell = (props: CellProps) => {
           <motion.img
             className='cell-mark'
             key='svg image'
-            initial={'unmarked'}
-            animate={'marked'}
+            initial={props.winningSquare ? 'marked' : 'unmarked'}
+            animate={props.winningSquare ? 'winningSquare' : 'marked'}
             exit={'unmarked'}
             variants={markingVariants}
 

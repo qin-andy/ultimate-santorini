@@ -14,7 +14,9 @@ interface BoardProps {
 const DummyBoard = (props: BoardProps) => {
   const [turn, setTurn] = useState<marking>('o');
   const [active, setActive] = useState<boolean>(true);
+  const [cellActive, setCellActive] = useState<boolean>(true);
   const [reordered, setReordered] = useState<boolean>(false);
+  const [winningSquareAnim, setWinningSquareAnim] = useState(false);
   let board: marking[] = useAppSelector(state => state.tictactoe.board);
   const dispatch = useAppDispatch();
 
@@ -52,8 +54,8 @@ const DummyBoard = (props: BoardProps) => {
             key={i * props.dimensions.x + j}
             marking={data[i * props.dimensions.x + j]}
             x={j} y={i}
-            active={active}
             dimensions={props.dimensions}
+            winningSquare={winningSquareAnim}
             onClick={onCellClick}
           />
         cells.push(cell);
@@ -89,6 +91,15 @@ const DummyBoard = (props: BoardProps) => {
       <Button onClick={() => {
         setReordered(!reordered);
       }}>Reorder</Button>
+      <Button onClick={() => {
+        setWinningSquareAnim(!winningSquareAnim);
+      }}>Winning Animation</Button>
+      <Button onClick={() => {
+        setWinningSquareAnim(!winningSquareAnim);
+      }}>Winning Animation</Button>
+      <Button onClick={() => {
+        setCellActive(!cellActive);
+      }}>Cell Active</Button>
       <div className='d-flex flex-column align-items-center justify-content-center'>
         <div className='m-3 tictactoe-grid' style={{
           display: `grid`,

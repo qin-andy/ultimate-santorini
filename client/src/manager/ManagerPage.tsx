@@ -10,8 +10,6 @@ import { motion, AnimateSharedLayout } from 'framer-motion';
 const ManagerPage = () => {
   const dispatch = useAppDispatch();
   const winner = useAppSelector(state => state.tictactoe.winner);
-  const won = useAppSelector(state => state.tictactoe.completed);
-  const running = useAppSelector(state => state.tictactoe.running);
   const gameName = useAppSelector(state => state.manager.gameName);
 
   const [inputGame, setInputGame] = useState('Test Game');
@@ -20,10 +18,9 @@ const ManagerPage = () => {
   useEffect(() => {
     // Routing listeners to store updates
     socket.on('game update', (response: GameResponse) => {
-      console.log('recieved game response:')
       console.log(response);
       dispatch({ type: 'tictactoe/gameResponseReceived', payload: response })
-      if (response.type === 'start success') {
+      if (response.type === 'start success' || response.type === 'reset success') {
         let board: marking[] = new Array<marking>(response.payload.size.x * response.payload.size.y);
         board.fill('*');
         let payload = { x: response.payload.size.x, y: response.payload.size.y, board }
@@ -31,19 +28,19 @@ const ManagerPage = () => {
       } else if (response.type === 'mark') {
         dispatch({ type: 'tictactoe/boardUpdated', payload: response.payload.board });
       } else if (response.type === 'win') {
+        console.log(response);
         dispatch({
           type: 'tictactoe/gameWon', payload: {
             winner: response.payload.winner,
             board: response.payload.board,
-            winningMark: response.payload.mark
+            winningMark: response.payload.mark,
+            winningSquares: response.payload.winningSquares
           }
         });
       }
     });
 
     socket.on('manager response', (response: ManagerResponse) => {
-      console.log('recieved manager response:')
-      console.log(response);
       if (response.type === 'player info') dispatch({
         type: 'manager/playerInfoReceived',
         payload: response.payload
@@ -53,7 +50,7 @@ const ManagerPage = () => {
 
     let refreshInfo = setInterval(() => {
       getPlayerInfo('');
-    }, 500);
+    }, 1000);
 
     return () => {
       socket.off('game update')
