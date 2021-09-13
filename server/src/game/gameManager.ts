@@ -53,21 +53,24 @@ export class GameManager {
       if (!player1 || !player1.socket.connected) return false;
 
       let player2id = this.matchmakingQueue.shift();
-      if (!player2id) {
-        this.matchmakingQueue.push(player1id);
-        return false;
-      }
-      let player2 = this.playersMap.get(player2id);
+      let player2 = this.playersMap.get('' + player2id);
       if (!player2 || !player2.socket.connected) {
         this.matchmakingQueue.push(player1id);
         return false;
       }
 
-      let newGame = new TicTacToeGame(player1id + player2id, this.io);
+      let newGame = new TicTacToeAutoGame(player1id + player2id, this.io);
       newGame.addPlayer(player1);
       newGame.addPlayer(player2);
-      newGame.start(); // TODO : someone might join the game by chance before game start?
       this.gamesMap.set(newGame.name, newGame);
+
+      let response = {
+        error: false,
+        payload: player1id + player2id,
+        type: 'queue game found',
+        message: 'game found!'
+      }
+      this.io.to(newGame.roomId).emit('manager response', response);
       return true;
     }
     return false;
@@ -99,6 +102,7 @@ export class GameManager {
         if (!player.inGame) {
           player.inGame = true;
           this.matchmakingQueue.push(player.id);
+          this.matchmakePlayersInQueue();
           event.acknowledger(response);
         } else {
           response.message = 'player already in game!';
@@ -254,7 +258,6 @@ export class GameManager {
       if (event.payload.type === 'tictactoe') {
         if (event.payload.autoplay) {
           game = new TicTacToeAutoGame(event.payload.name, this.io, this);
-          console.log('Autoplay game created!');
         } else {
           game = new TicTacToeGame(event.payload.name, this.io, this);
         }

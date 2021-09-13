@@ -45,10 +45,10 @@ describe('game manager tests', () => {
     return new Promise<void>(resolve => { setTimeout(resolve, delay) });
   }
 
-  let createGameFactory = (clientSocket: ClientSocket, gameId: string, type: string = '') => {
+  let createGameFactory = (clientSocket: ClientSocket, name: string, type: string = '', autoplay: boolean = false) => {
     return new Promise<ManagerResponse>((resolve, reject) => {
       let timeout = setTimeout(() => reject('timeout'), 200);
-      let payload = { name: gameId, type: type }
+      let payload = { name: name, type: type, autoplay }
       clientSocket.emit('manager action', 'create game', payload, (response: ManagerResponse) => {
         clearInterval(timeout);
         resolve(response);
@@ -201,20 +201,15 @@ describe('game manager tests', () => {
         expect(response.error).toBe(false);
       });
 
-      it('create game adds a new game to gamesMap', async () => {
+      it('create game adds a new game to gamesMap with correct info', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
         await createGameFactory(clientSockets[0], 'Test Game');
         expect(gameManager.gamesMap.size).toBe(1);
-      });
-
-      it('create game creates new game object with correct info (get from gamesMap, correct id)', async () => {
-        [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
-        await createGameFactory(clientSockets[0], 'Test Game');
         expect(gameManager.gamesMap.get('Test Game')).toBeTruthy();
         expect(gameManager.gamesMap.get('Test Game')?.name).toBe('Test Game');
       });
 
-      it('create game adds player with correct socket to newly created game', async () => {
+      it('create game adds players with correct socket to newly created game', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
         await createGameFactory(clientSockets[0], 'Test Game');
         let gamePlayerIds = gameManager.gamesMap.get('Test Game')?.playerManager.getIds();
@@ -296,7 +291,18 @@ describe('game manager tests', () => {
         expect(response.error).toBe(true);
       });
 
-      it.todo('create autoplay game creates autoplay game');
+      it('create autoplay game adds a new autoplay tictactoegame', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        await createGameFactory(clientSockets[0], 'Test Game', 'tictactoe', true);
+        expect(gameManager.gamesMap.size).toBe(1);
+        let newGame = gameManager.gamesMap.get('Test Game')
+        expect(newGame).toBeTruthy();
+        await joinGameFactory(clientSockets[1], 'Test Game');
+        await sleepFactory(200);
+        // If autoplay, should have started automatically
+        expect(newGame?.active).toBe(true);
+        expect(newGame?.running).toBe(true);
+      });
     });
 
     describe('event join game', () => {
@@ -448,26 +454,29 @@ describe('game manager tests', () => {
 
   describe('matchmatking queue', () => {
     describe('join queue event through socket emit', () => {
-      it('new player join queue error is false', async () => {
+      it('new player join queue successful', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
-        let response = await queuePromiseFactory(clientSockets[0]);
-        expect(response.error).toBe(false);
-      });
-
-      it('player join queue has id added to queue', async () => {
-        [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
-        await queuePromiseFactory(clientSockets[0]);
-        expect(gameManager.matchmakingQueue[0]).toBe(clientSockets[0].id);
-      });
-
-      it('player join queue has inGame property set to true', async () => {
-        [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
-        await queuePromiseFactory(clientSockets[0]);
         let player = gameManager.playersMap.get(clientSockets[0].id);
         if (!player) {
           throw new Error('Player doesn\'t exist!');
         }
+        let response = await queuePromiseFactory(clientSockets[0]);
+        expect(response.error).toBe(false);
+        expect(gameManager.matchmakingQueue[0]).toBe(clientSockets[0].id);
         expect(player.inGame).toBe(true);
+      });
+
+      it('join queue calls matchmake queue and makes new game if there are two people', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        let player1 = gameManager.playersMap.get(clientSockets[0].id);
+        if (!player1) throw new Error('Player doesnt exist!');
+        let player2 = gameManager.playersMap.get(clientSockets[1].id);
+        if (!player2) throw new Error('Player doesnt exist!');
+        await queuePromiseFactory(clientSockets[0]);
+        await queuePromiseFactory(clientSockets[1]);
+        expect(gameManager.matchmakingQueue.length).toBe(0);
+        expect(player1.inGame).toBe(true);
+        expect(player2.inGame).toBe(true);
       });
 
       it('player with ingame as false attempt join queue response error is true', async () => {
@@ -501,8 +510,6 @@ describe('game manager tests', () => {
     });
 
     describe('matchmakeQueue function tests', () => {
-      // MATCHMAKE PLAYERS IN QUEUE TESTS
-      // matchmake queue returns true if both players exist, are connected, and not ingame
       it('matchmake queue returns true if both players exist, are connected, and not ingame', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
         gameManager.matchmakingQueue.push(clientSockets[0].id);
@@ -510,23 +517,15 @@ describe('game manager tests', () => {
         expect(gameManager.matchmakePlayersInQueue()).toBe(true);
       });
 
-      it('matchmake queue creates new game in gamesMap with name as the player ids concatted', async () => {
+      it('matchmake queue creates new game with correct name and players', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
         gameManager.matchmakingQueue.push(clientSockets[0].id);
         gameManager.matchmakingQueue.push(clientSockets[1].id);
+        let expectedIds = clientSockets.map(clientSocket => clientSocket.id);
         gameManager.matchmakePlayersInQueue();
         expect(gameManager.gamesMap.has(clientSockets[0].id + clientSockets[1].id)).toBe(true);
-      });
-
-      it('matchmake queue creates new game in gamesMap with correct players in playermanager', async () => {
-        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
-        gameManager.matchmakingQueue.push(clientSockets[0].id);
-        gameManager.matchmakingQueue.push(clientSockets[1].id);
-        gameManager.matchmakePlayersInQueue();
         let newGame = gameManager.gamesMap.get(clientSockets[0].id + clientSockets[1].id);
-        if (!newGame) throw new Error('New game not created!');
-        let expectedIds = clientSockets.map(clientSocket => clientSocket.id);
-        expect(newGame.playerManager.getIds()).toStrictEqual(expect.arrayContaining(expectedIds));
+        expect(newGame?.playerManager.getIds()).toStrictEqual(expect.arrayContaining(expectedIds));
       });
 
       it('matchmake queue removes both players from queue if successful', async () => {
@@ -535,6 +534,22 @@ describe('game manager tests', () => {
         gameManager.matchmakingQueue.push(clientSockets[1].id);
         gameManager.matchmakePlayersInQueue();
         expect(gameManager.matchmakingQueue).toStrictEqual([]);
+      });
+
+      it('matchmake queue emits queue game found event to both players', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        gameManager.matchmakingQueue.push(clientSockets[0].id);
+        gameManager.matchmakingQueue.push(clientSockets[1].id);
+        let promise1 = managerResponsePromiseFactory(clientSockets[0]);
+        let promise2 = managerResponsePromiseFactory(clientSockets[1]);
+        gameManager.matchmakePlayersInQueue();
+        let response1 = await promise1;
+        let response2 = await promise2;
+        expect(gameManager.matchmakingQueue.length).toBe(0);
+        expect(response1.error).toBe(false);
+        expect(response1.type).toBe('queue game found');
+        expect(response2.error).toBe(false);
+        expect(response2.type).toBe('queue game found');
       });
 
       // matchmake queue returns false if less than 2 players
