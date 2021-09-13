@@ -125,15 +125,25 @@ describe('tictactoe tests', () => {
           'x', 'o', 'x',
           'o', 'x', 'o'
         ];
-        expect(game.checkWin(0, 0)).toBe(true);
-        expect(game.checkWin(1, 1)).toBe(true);
-        expect(game.checkWin(2, 2)).toBe(true);
+        expect(game.checkWin(0, 0)).toBeTruthy();
+        expect(game.checkWin(1, 1)).toBeTruthy();
+        expect(game.checkWin(2, 2)).toBeTruthy();
 
-        expect(game.checkWin(0, 2)).toBe(true);
-        expect(game.checkWin(2, 0)).toBe(true);
+        let expectedWinningSquares = [{ x: 0, y: 0 }, { x: 1, y: 1 }, { x: 2, y: 2 }];
+        expect(game.checkWin(0, 0)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+        expect(game.checkWin(1, 1)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+        expect(game.checkWin(2, 2)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
 
-        expect(game.checkWin(0, 1)).toBe(false);
-        expect(game.checkWin(1, 2)).toBe(false);
+
+        expect(game.checkWin(0, 2)).toBeTruthy();
+        expect(game.checkWin(2, 0)).toBeTruthy();
+
+        expectedWinningSquares = [{ x: 0, y: 2 }, { x: 1, y: 1 }, { x: 2, y: 0 }];
+        expect(game.checkWin(0, 2)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+        expect(game.checkWin(2, 0)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+
+        expect(game.checkWin(0, 1)).toBeFalsy();
+        expect(game.checkWin(1, 2)).toBeFalsy();
       });
 
       it('board win test 2, rows', () => {
@@ -143,17 +153,31 @@ describe('tictactoe tests', () => {
           'x', 'x', 'x',
           'o', 'o', 'o'
         ];
-        expect(game.checkWin(0, 0)).toBe(true);
-        expect(game.checkWin(1, 0)).toBe(true);
-        expect(game.checkWin(2, 0)).toBe(true);
+        expect(game.checkWin(0, 0)).toBeTruthy();
+        expect(game.checkWin(1, 0)).toBeTruthy();
+        expect(game.checkWin(2, 0)).toBeTruthy();
+        let expectedWinningSquares = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }];
+        expect(game.checkWin(0, 0)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+        expect(game.checkWin(1, 0)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+        expect(game.checkWin(2, 0)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
 
-        expect(game.checkWin(0, 1)).toBe(true);
-        expect(game.checkWin(1, 1)).toBe(true);
-        expect(game.checkWin(2, 1)).toBe(true);
 
-        expect(game.checkWin(0, 2)).toBe(true);
-        expect(game.checkWin(1, 2)).toBe(true);
-        expect(game.checkWin(2, 2)).toBe(true);
+        expect(game.checkWin(0, 1)).toBeTruthy();
+        expect(game.checkWin(1, 1)).toBeTruthy();
+        expect(game.checkWin(2, 1)).toBeTruthy();
+        expectedWinningSquares = [{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }];
+        expect(game.checkWin(0, 1)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+        expect(game.checkWin(1, 1)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+        expect(game.checkWin(2, 1)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+
+        expect(game.checkWin(0, 2)).toBeTruthy();
+        expect(game.checkWin(1, 2)).toBeTruthy();
+        expect(game.checkWin(2, 2)).toBeTruthy();
+        expectedWinningSquares = [{ x: 0, y: 2 }, { x: 1, y: 2 }, { x: 2, y: 2 }];
+        expect(game.checkWin(0, 2)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+        expect(game.checkWin(1, 2)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+        expect(game.checkWin(2, 2)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+
       });
 
       it('board win test 3, columns', () => {
@@ -163,17 +187,31 @@ describe('tictactoe tests', () => {
           'o', 'x', 'o',
           'o', 'x', 'o'
         ];
-        expect(game.checkWin(0, 0)).toBe(true);
-        expect(game.checkWin(0, 1)).toBe(true);
-        expect(game.checkWin(0, 2)).toBe(true);
 
-        expect(game.checkWin(1, 0)).toBe(true);
-        expect(game.checkWin(1, 1)).toBe(true);
-        expect(game.checkWin(1, 2)).toBe(true);
+        expect(game.checkWin(0, 0)).toBeTruthy();
+        expect(game.checkWin(0, 1)).toBeTruthy();
+        expect(game.checkWin(0, 2)).toBeTruthy();
+        let expectedWinningSquares = [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }];
+        expect(game.checkWin(0, 0)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+        expect(game.checkWin(0, 1)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+        expect(game.checkWin(0, 2)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
 
-        expect(game.checkWin(2, 0)).toBe(true);
-        expect(game.checkWin(2, 1)).toBe(true);
-        expect(game.checkWin(2, 2)).toBe(true);
+
+        expect(game.checkWin(1, 0)).toBeTruthy();
+        expect(game.checkWin(1, 1)).toBeTruthy();
+        expect(game.checkWin(1, 2)).toBeTruthy();
+        expectedWinningSquares = [{ x: 1, y: 0 }, { x: 1, y: 1 }, { x: 1, y: 2 }];
+        expect(game.checkWin(1, 0)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+        expect(game.checkWin(1, 1)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+        expect(game.checkWin(1, 2)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+
+        expect(game.checkWin(2, 0)).toBeTruthy();
+        expect(game.checkWin(2, 1)).toBeTruthy();
+        expect(game.checkWin(2, 2)).toBeTruthy();
+        expectedWinningSquares = [{ x: 2, y: 0 }, { x: 2, y: 1 }, { x: 2, y: 2 }];
+        expect(game.checkWin(2, 0)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+        expect(game.checkWin(2, 1)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
+        expect(game.checkWin(2, 2)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
       });
     });
 

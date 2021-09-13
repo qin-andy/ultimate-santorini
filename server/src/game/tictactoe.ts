@@ -159,8 +159,9 @@ export class TicTacToeGame extends Game {
 
     this.board[squareIndex] = this.turn; // actual marking
     // check winner
-    if (this.checkWin(x, y)) {
-      return this.win(x, y);
+    let win = this.checkWin(x, y);
+    if (win) {
+      return this.win(x, y, win);
     }
 
     // otherwise, toggle turn and send full state
@@ -177,7 +178,7 @@ export class TicTacToeGame extends Game {
     };
   }
 
-  win(x: number, y: number): GameResponse {
+  win(x: number, y: number, winningSquares: Array<{ x: number, y: number }>): GameResponse {
     let squareIndex = this.getBoardIndex(x, y);
     this.end();
     return {
@@ -186,19 +187,21 @@ export class TicTacToeGame extends Game {
         board: this.board,
         mark: { x, y },
         winner: this.board[squareIndex],
+        winningSquares
       },
       type: 'win',
       message: this.board[squareIndex] + ' has won!',
     }
   }
 
-  checkWin(x: number, y: number): boolean {
+  checkWin(x: number, y: number): Array<{ x: number, y: number }> | undefined {
     let squareIndex = this.getBoardIndex(x, y);
     //info
     let boardX = this.dimensions.x - 1; // index, not length!
     let boardY = this.dimensions.y - 1;
     let player = this.board[squareIndex];
     let winSize = 3;
+    let winningSquares: Array<{ x: number, y: number }> = [];
 
     // columns nad rows
     // rows
@@ -206,8 +209,11 @@ export class TicTacToeGame extends Game {
     for (let i = 0; i < boardX + 1; i++) { // boardX + 1 to loop through entire row/column
       if (this.board[this.getBoardIndex(i, y)] === player) {
         consecutives++;
-        if (consecutives === winSize) {
-          return true;
+        if (consecutives >= winSize) { // greater equals vs stric equals?
+          for (let j = 0; j < consecutives; j++) {
+            winningSquares.push({ x: i - j, y });
+          }
+          return winningSquares;
         }
       } else {
         consecutives = 0;
@@ -220,7 +226,10 @@ export class TicTacToeGame extends Game {
       if (this.board[this.getBoardIndex(x, i)] === player) {
         consecutives++;
         if (consecutives === winSize) {
-          return true;
+          for (let j = 0; j < consecutives; j++) {
+            winningSquares.push({ x: x, y: i - j });
+          }
+          return winningSquares;
         }
       } else {
         consecutives = 0;
@@ -241,7 +250,10 @@ export class TicTacToeGame extends Game {
       if (this.board[this.getBoardIndex(currY, currX)] === player) {
         consecutives++;
         if (consecutives === winSize) {
-          return true;
+          for (let j = 0; j < consecutives; j++) {
+            winningSquares.push({ x: currX - j, y: currY - j });
+          }
+          return winningSquares;
         }
       } else {
         consecutives = 0;
@@ -262,12 +274,15 @@ export class TicTacToeGame extends Game {
       if (this.board[this.getBoardIndex(currY, currX)] === player) {
         consecutives++;
         if (consecutives === winSize) {
-          return true;
+          for (let j = 0; j < consecutives; j++) {
+            winningSquares.push({ x: currX + j, y: currY - j });
+          }
+          return winningSquares;
         }
       } else {
         consecutives = 0;
       }
     }
-    return false;
+    return undefined;
   }
 }
