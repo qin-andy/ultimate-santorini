@@ -13,7 +13,7 @@ interface CellProps {
 
 const Cell = (props: CellProps) => {
   const [cellVariant, setCellVariant] = useState('initial');
-  let delay = ((props.y + props.x) ** (1)) * 0.05;
+  let delay = ((props.y*props.dimensions.x + props.x) ** (1)) * 0.04;
 
   const cellVariants = {
     initial: {
@@ -38,7 +38,7 @@ const Cell = (props: CellProps) => {
       }
     },
     mouseDown: {
-      opacity: 1, scale: 0.95, x: 0, y: 0,
+      opacity: 1, scale: 0.90, x: 0, y: 0,
       transition: {
         duration: 0.1
       }
@@ -51,10 +51,10 @@ const Cell = (props: CellProps) => {
       }
     },
     afterExit: {
-      opacity: 0, x: 0, y: -100,
+      opacity: 0, x: 0, y: -150,
       transition: {
         duration: 0.4,
-        delay: delay
+        delay: delay * 2
       }
     }
   }
@@ -76,7 +76,6 @@ const Cell = (props: CellProps) => {
     }
   }
 
-
   return (
     <motion.div
       className='tictactoe-cell d-flex align-items-center justify-content-center'
@@ -90,9 +89,10 @@ const Cell = (props: CellProps) => {
       onMouseLeave={() => setCellVariant('open')}
       onMouseDown={() => setCellVariant('mouseDown')}
       onMouseUp={() => setCellVariant('openHover')}
+      layout
     >
       <AnimatePresence>
-        {props.marking === '*' ? null :
+        {props.marking !== 'x' && props.marking !=='o' ? null :
           <motion.img
             className='cell-mark'
             key='svg image'

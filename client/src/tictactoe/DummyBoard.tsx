@@ -14,6 +14,7 @@ interface BoardProps {
 const DummyBoard = (props: BoardProps) => {
   const [turn, setTurn] = useState<marking>('o');
   const [active, setActive] = useState<boolean>(true);
+  const [reordered, setReordered] = useState<boolean>(false);
   let board: marking[] = useAppSelector(state => state.tictactoe.board);
   const dispatch = useAppDispatch();
 
@@ -43,7 +44,7 @@ const DummyBoard = (props: BoardProps) => {
   }
 
   function renderData(data: marking[]): ReactElement[] {
-    let cells = [];
+    let cells: ReactElement[] = [];
     for (let i = 0; i < props.dimensions.y; i++) {
       for (let j = 0; j < props.dimensions.x; j++) {
         let cell =
@@ -58,19 +59,36 @@ const DummyBoard = (props: BoardProps) => {
         cells.push(cell);
       }
     }
+    if (reordered) {
+      for (let i = 0; i < 3; i++) {
+        let randomIndex1 = Math.round(Math.random() * cells.length);
+        let randomIndex2 = Math.round(Math.random() * cells.length);
+        let cell1 = cells[randomIndex1];
+        cells[randomIndex1] = cells[randomIndex2];
+        cells[randomIndex2] = cell1;
+      }
+    }
     return cells;
   }
 
   return (
     <div className=''>
       <Button onClick={() => {
-        let emptyBoard = Array<marking>(props.dimensions.x*props.dimensions.y);
+        let emptyBoard = Array<marking>(props.dimensions.x * props.dimensions.y);
+        emptyBoard.fill('x');
+        dispatch({ type: 'tictactoe/boardUpdated', payload: emptyBoard });
+      }}>Fill</Button>
+      <Button onClick={() => {
+        let emptyBoard = Array<marking>(props.dimensions.x * props.dimensions.y);
         emptyBoard.fill('*');
         dispatch({ type: 'tictactoe/boardUpdated', payload: emptyBoard });
       }}>Clear</Button>
       <Button onClick={() => {
         setActive(!active);
       }}>Toggle Board</Button>
+      <Button onClick={() => {
+        setReordered(!reordered);
+      }}>Reorder</Button>
       <div className='d-flex flex-column align-items-center justify-content-center'>
         <div className='m-3 tictactoe-grid' style={{
           display: `grid`,

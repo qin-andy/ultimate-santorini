@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { marking } from '../types';
 import { Col, Row } from 'react-bootstrap';
 import Cell from './Cell';
@@ -6,13 +6,15 @@ import './tictactoe.scss'
 import { ReactElement } from 'react';
 import { useAppSelector } from '../hooks/hooks';
 import { tictactoeMark } from '../services/socket';
+import { AnimatePresence } from 'framer-motion';
 
 interface BoardProps {
-  dimensions: {x: number, y: number}
+  dimensions: { x: number, y: number }
 }
 
 const Board = (props: BoardProps) => {
-  let board: marking[] = useAppSelector(state => state.tictactoe.board);
+  const board: marking[] = useAppSelector(state => state.tictactoe.board);
+  const inGame = useAppSelector(state => state.manager.inGame);
   console.log(board);
 
   useEffect(() => {
@@ -23,39 +25,37 @@ const Board = (props: BoardProps) => {
   });
 
   function onCellClick(x: number, y: number) {
-    console.log(x, y);
     if (board) console.log(board[y * props.dimensions.x + x]);
     tictactoeMark(x, y);
   }
 
   function renderData(data: marking[]): ReactElement[] {
-    let rows: ReactElement[] = [];
+    let cells = [];
     for (let i = 0; i < props.dimensions.y; i++) {
-      let cells: ReactElement[] = [];
       for (let j = 0; j < props.dimensions.x; j++) {
-        cells.push(
-          <Col key={i * props.dimensions.y + j} className='p-0'>
-            <Cell
-              marking={data[i * props.dimensions.x + j]}
-              dimensions={props.dimensions}
-              x={j} y={i}
-              onClick={onCellClick}
-            />
-          </Col>
-        )
+        let cell =
+          <Cell
+            key={i * props.dimensions.x + j}
+            marking={data[i * props.dimensions.x + j]}
+            x={j} y={i}
+            active={inGame}
+            dimensions={props.dimensions}
+            onClick={onCellClick}
+          />
+        cells.push(cell);
       }
-      rows.push(
-        <Row key={i} className='flex-row'>
-          {cells}
-        </Row>
-      );
     }
-    return rows;
+    return cells;
   }
 
   return (
-    <div className='m-3 tictactoe-grid'>
-      {renderData(board)}
+    <div className='m-3 tictactoe-grid' style={{
+      display: `grid`,
+      gridTemplateColumns: `repeat(${props.dimensions.x}, 1fr)`
+    }}>
+      <AnimatePresence>
+        {inGame ? renderData(board) : null}
+      </AnimatePresence>
     </div>
   );
 }

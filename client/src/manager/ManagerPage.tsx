@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Col, Form, ListGroup, Row } from 'react-bootstrap';
+import { Button, Card, Col, Form, ListGroup, Row, Container } from 'react-bootstrap';
 
 import DefaultPage from '../components/DefaultPage';
 import socket, { createGame, getPlayerInfo, joinGame, leaveGame, tictactoeStart } from '../services/socket';
@@ -18,6 +18,7 @@ const ManagerPage = () => {
 
 
   useEffect(() => {
+    // Routing listeners to store updates
     socket.on('game update', (response: GameResponse) => {
       console.log('recieved game response:')
       console.log(response);
@@ -60,9 +61,9 @@ const ManagerPage = () => {
   }, []);
 
   return (
-    <DefaultPage>
+    <Container fluid className='w-100'>
       <Row className='w-100'>
-        <Col sm={4} className='text-center d-flex flex-column'>
+        <Col sm={4} className='p-2 d-flex flex-column text-center'>
           <h1>Controls</h1>
           <Form onSubmit={e => e.preventDefault()}>
             <Form.Group className="mb-3" controlId="exampleForm.ControlTextarea1">
@@ -84,17 +85,17 @@ const ManagerPage = () => {
           <Button variant='outline-primary' onClick={() => tictactoeStart()}>Start</Button>
           <PlayerInfoCard />
         </Col>
-        <Col sm={4} className='d-flex flex-column align-items-center'>
+        <Col sm={4} className='p-2 d-flex flex-column align-items-center text-center'>
           <h1>{gameName ? gameName : 'Waiting to Join Game'}</h1>
           <Board dimensions={{x: 3, y: 3}} />
           {won ? <h2>Winner: {winner}</h2> : null}
         </Col>
-        <Col sm={4} className='d-flex flex-column align-items-center'>
+        <Col sm={4} className='p-2 d-flex flex-column align-items-center'>
           <LatestGameResponseCard />
           <LatestManagerResponseCard />
         </Col>
       </Row>
-    </DefaultPage>
+    </Container>
   );
 }
 
