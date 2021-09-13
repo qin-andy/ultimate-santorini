@@ -4,6 +4,7 @@ import { TicTacToeGame } from './tictactoe';
 import { Server } from 'socket.io';
 import { ManagerEvent, ManagerResponse } from "../types/types";
 import { response } from "express";
+import { TicTacToeAutoGame } from "./tictactoeAuto";
 
 export class GameManager {
   gamesMap: Map<string, Game>;
@@ -252,7 +253,7 @@ export class GameManager {
       let game: Game;
       if (event.payload.type === 'tictactoe') {
         if (event.payload.autoplay) {
-          game = new TicTacToeGame(event.payload.name, this.io, this, true);
+          game = new TicTacToeAutoGame(event.payload.name, this.io, this);
           console.log('Autoplay game created!');
         } else {
           game = new TicTacToeGame(event.payload.name, this.io, this);

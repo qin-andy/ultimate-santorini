@@ -7,15 +7,13 @@ import { Player } from "./player";
 export class TicTacToeGame extends Game {
   turn: string;
   board: Array<string>;
-  autoplay: boolean;
   dimensions: { x: number, y: number };
 
-  constructor(name: string, io: Server, gameManager?: GameManager, autoplay = false) {
+  constructor(name: string, io: Server, gameManager?: GameManager) {
     super(name, io, gameManager);
     this.turn = '*';
     this.board = [];
     this.dimensions = { x: 0, y: 0 };
-    this.autoplay = autoplay;
   }
 
   initializeHandlers() {
@@ -42,20 +40,6 @@ export class TicTacToeGame extends Game {
     this.eventHandlerMap.set('tictactoe start', startHandler);
   }
 
-  handleEvent(event: GameEvent) {
-    super.handleEvent(event);
-  }
-
-  addPlayer(player: Player) {
-    super.addPlayer(player);
-    if (this.autoplay) { // if autoplay is true, autostart
-      let response = this.start();
-      if (!response.error) {
-        this.io.to(this.roomId).emit('game update', response);
-      }
-    }
-  }
-
   removePlayer(id: string) {
     let removedPlayer = super.removePlayer(id);
     if (this.playerManager.getCount() <= 1) {
@@ -70,7 +54,7 @@ export class TicTacToeGame extends Game {
       // TODO : test this
       this.io.to(this.roomId).emit('game update', response);
       this.active = false;
-      this.end(false);
+      this.end();
     }
     return removedPlayer;
   }
@@ -120,37 +104,8 @@ export class TicTacToeGame extends Game {
     return response;
   }
 
-  reset(turn = 'o') {
-    if (!this.active) {
-      let response = {
-        error: true,
-        payload: null,
-        type: 'reset fail',
-        message: 'game is no longer active!'
-      }
-      return response;
-    }
-    let response = this.start(this.dimensions.x, this.dimensions.y, turn);
-    if (response.error) {
-      response.type = 'reset fail';
-      return response;
-    }
-    response.type = 'start success';
-    return response;
-  }
-
-  end(reset = false, delay = 3000) {
-      console.log('resetting in 3000!');
-      this.running = false;
-    if (this.autoplay) { // TODO : whts the point of reset variable if it depends on autoplay?
-      // TODO : The point of the reset flag is to differentiate between a natural gameend (win)
-      // and an artifical game end (player leaves game)
-      console.log('resetting game!');
-      let resetTimeout = setTimeout(() => {
-        let response = this.reset(this.turn);
-        this.io.to(this.roomId).emit('game update', response);
-      }, delay);
-    }
+  end() {
+    this.running = false;
   }
 
   getBoardIndex(x: number, y: number): number {
@@ -205,17 +160,7 @@ export class TicTacToeGame extends Game {
     this.board[squareIndex] = this.turn; // actual marking
     // check winner
     if (this.checkWin(x, y)) {
-      this.end();
-      return {
-        error: false,
-        payload: {
-          board: this.board,
-          mark: { x, y },
-          winner: this.board[squareIndex],
-        },
-        type: 'win',
-        message: this.board[squareIndex] + ' has won!',
-      }
+      return this.win(x, y);
     }
 
     // otherwise, toggle turn and send full state
@@ -230,6 +175,21 @@ export class TicTacToeGame extends Game {
       type: 'mark',
       message: 'player marked, now it is ' + this.turn + '\'s turn'
     };
+  }
+
+  win(x: number, y: number): GameResponse {
+    let squareIndex = this.getBoardIndex(x, y);
+    this.end();
+    return {
+      error: false,
+      payload: {
+        board: this.board,
+        mark: { x, y },
+        winner: this.board[squareIndex],
+      },
+      type: 'win',
+      message: this.board[squareIndex] + ' has won!',
+    }
   }
 
   checkWin(x: number, y: number): boolean {
