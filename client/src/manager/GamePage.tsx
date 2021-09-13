@@ -32,6 +32,12 @@ const GamePage = () => {
             winningSquares: response.payload.winningSquares
           }
         });
+      } else if (response.type === 'tie') {
+        dispatch({
+          type: 'tictactoe/gameTied', payload: {
+            board: response.payload.board
+          }
+        })
       }
     });
 

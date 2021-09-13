@@ -38,9 +38,23 @@ export class TicTacToeAutoGame extends TicTacToeGame {
     return response;
   }
 
+  tie(x: number, y: number) {
+    let response = {
+      error: false,
+      payload: {
+        board: this.board,
+        mark: { x, y },
+        turn: this.turn,
+      },
+      type: 'tie',
+      message: 'tie game!'
+    }
+    this.end(true);
+    return response;
+  }
+
   // Override, includes reset flag which will reset game
-  end(reset = false, delay = 5000) {
-    // console.log('resetting in ' + delay);
+  end(reset = false, delay = 3000) {
     this.running = false;
     if (reset) {
       this.resetTimeout = setTimeout(() => {

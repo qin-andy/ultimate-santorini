@@ -228,6 +228,13 @@ describe('tictactoe tests', () => {
         expect(game.board).toStrictEqual(expectedBoard);
       });
 
+      it('single mark increments squaresmarked', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        game.start();
+        game.mark(clientSockets[0].id, 1, 1);
+        expect(game.squaresMarked).toBe(1);
+      });
+
       it('single mark GameUpdate has correct contents', async () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
         game.start();
@@ -293,6 +300,22 @@ describe('tictactoe tests', () => {
         expect(response.error).toBe(false);
         expect(response.type).toBe('win');
         expect(response.payload.winner).toBe('x');
+      });
+
+      it('mark board tie mark ties', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        game.start();
+        game.squaresMarked = 8;
+        game.board = [
+          '*', 'x', 'x',
+          'x', 'o', 'o',
+          'o', 'x', 'x'
+        ];
+        game.turn = 'o';
+        let response = game.mark(clientSockets[0].id, 0, 0);
+        expect(response.error).toBe(false);
+        expect(response.type).toBe('tie');
+        expect(game.running).toBe(false);
       });
 
       it('mark board when its not your turn gives "turn" error', async () => {

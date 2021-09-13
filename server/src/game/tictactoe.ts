@@ -8,12 +8,14 @@ export class TicTacToeGame extends Game {
   turn: string;
   board: Array<string>;
   dimensions: { x: number, y: number };
+  squaresMarked: number;
 
   constructor(name: string, io: Server, gameManager?: GameManager) {
     super(name, io, gameManager);
     this.turn = '*';
     this.board = [];
     this.dimensions = { x: 0, y: 0 };
+    this.squaresMarked = 0;
   }
 
   initializeHandlers() {
@@ -79,6 +81,7 @@ export class TicTacToeGame extends Game {
     }
 
     let players = Array.from(this.playerManager.playerMap.values());
+    this.squaresMarked = 0;
     this.teamMap.set(players[0].id, 'o');
     this.teamMap.set(players[1].id, 'x');
 
@@ -158,10 +161,15 @@ export class TicTacToeGame extends Game {
     }
 
     this.board[squareIndex] = this.turn; // actual marking
+    this.squaresMarked += 1;
     // check winner
     let win = this.checkWin(x, y);
     if (win) {
       return this.win(x, y, win);
+    }
+
+    if (this.squaresMarked >= this.dimensions.x*this.dimensions.y) {
+      return this.tie(x, y);
     }
 
     // otherwise, toggle turn and send full state
@@ -176,6 +184,21 @@ export class TicTacToeGame extends Game {
       type: 'mark',
       message: 'player marked, now it is ' + this.turn + '\'s turn'
     };
+  }
+
+  tie(x: number, y: number): GameResponse {
+    let response = {
+      error: false,
+      payload: {
+        board: this.board,
+        mark: { x, y },
+        turn: this.turn,
+      },
+      type: 'tie',
+      message: 'tie game!'
+    }
+    this.end();
+    return response;
   }
 
   win(x: number, y: number, winningSquares: Array<{ x: number, y: number }>): GameResponse {
