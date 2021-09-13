@@ -1,5 +1,5 @@
 import { marking } from "../types";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface CellProps {
@@ -14,7 +14,7 @@ interface CellProps {
 
 const Cell = (props: CellProps) => {
   const [cellVariant, setCellVariant] = useState('initial');
-  let delay = ((props.y*props.dimensions.x + props.x) ** (1)) * 0.04;
+  let delay = (props.y*props.dimensions.x + props.x) * 0.04;
 
   const cellVariants = {
     initial: {

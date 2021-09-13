@@ -11,6 +11,7 @@ const ManagerPage = () => {
   const dispatch = useAppDispatch();
   const winner = useAppSelector(state => state.tictactoe.winner);
   const gameName = useAppSelector(state => state.manager.gameName);
+  const board: marking[] = useAppSelector(state => state.tictactoe.board);
 
   const [inputGame, setInputGame] = useState('Test Game');
 
@@ -28,7 +29,6 @@ const ManagerPage = () => {
       } else if (response.type === 'mark') {
         dispatch({ type: 'tictactoe/boardUpdated', payload: response.payload.board });
       } else if (response.type === 'win') {
-        console.log(response);
         dispatch({
           type: 'tictactoe/gameWon', payload: {
             winner: response.payload.winner,
@@ -49,7 +49,7 @@ const ManagerPage = () => {
     });
 
     let refreshInfo = setInterval(() => {
-      getPlayerInfo('');
+      getPlayerInfo();
     }, 1000);
 
     return () => {
@@ -87,7 +87,7 @@ const ManagerPage = () => {
         <Col sm={4} className='p-2 d-flex flex-column align-items-center text-center'>
           <AnimateSharedLayout>
             <motion.h1 layout>{gameName ? gameName : 'Waiting to Join Game'}</motion.h1>
-            <Board dimensions={{ x: 3, y: 3 }} />
+            <Board dimensions={{ x: 3, y: 3 }} board={board} />
             <motion.h2 layout>Winner: {winner}</motion.h2>
           </AnimateSharedLayout>
         </Col>
@@ -112,7 +112,7 @@ const PlayerInfoCard = () => {
   });
 
   return (
-    <Card onClick={() => getPlayerInfo('')}>
+    <Card onClick={() => getPlayerInfo()}>
       <Card.Body>
         <Card.Header as='h3'>Player Info</Card.Header>
         <ListGroup variant='flush'>

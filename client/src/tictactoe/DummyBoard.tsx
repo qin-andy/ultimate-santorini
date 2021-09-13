@@ -5,7 +5,7 @@ import Cell from './Cell';
 import './tictactoe.scss'
 import { ReactElement } from 'react';
 import { useAppDispatch, useAppSelector } from '../hooks/hooks';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 
 interface BoardProps {
   dimensions: { x: number, y: number }

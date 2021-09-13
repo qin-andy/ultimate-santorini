@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Route, Switch } from 'react-router-dom';
 import AnimationPage from './manager/AnimationPage';
+import GamePage from './manager/GamePage';
 import ManagerPage from './manager/ManagerPage';
 
 
@@ -11,8 +12,11 @@ const App = () => {
         <Route path="/manager">
           <ManagerPage />
         </Route>
-        <Route path="/">
+        <Route path="/animation">
           <AnimationPage />
+        </Route>
+        <Route path="/">
+          <GamePage />
         </Route>
       </Switch>
     </BrowserRouter>

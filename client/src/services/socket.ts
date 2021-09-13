@@ -22,9 +22,15 @@ export const createGame = (name: string) => {
   });
 }
 
-export const getPlayerInfo = (name: string,) => {
+export const getPlayerInfo = () => {
   return new Promise<any>(resolve => {
-    socket.emit('manager action', 'player info', name, resolve);
+    socket.emit('manager action', 'player info', null, resolve);
+  });
+}
+
+export const joinQueue = () => {
+  return new Promise<any>(resolve => {
+    socket.emit('manager action', 'join queue', null, resolve);
   });
 }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { marking } from '../types';
 import Cell from './Cell';
 import './tictactoe.scss'
@@ -9,12 +9,12 @@ import { AnimatePresence } from 'framer-motion';
 
 interface BoardProps {
   dimensions: { x: number, y: number }
+  board: marking[]
+  active?: boolean;
 }
 
 const Board = (props: BoardProps) => {
-  const board: marking[] = useAppSelector(state => state.tictactoe.board);
   const winningSquares = useAppSelector(state => state.tictactoe.winningSquares);
-  const inGame = useAppSelector(state => state.manager.inGame);
 
   useEffect(() => {
     const xImg = new Image();
@@ -24,7 +24,6 @@ const Board = (props: BoardProps) => {
   });
 
   function onCellClick(x: number, y: number) {
-    if (board) console.log(board[y * props.dimensions.x + x]);
     tictactoeMark(x, y);
   }
 
@@ -56,8 +55,7 @@ const Board = (props: BoardProps) => {
     return cells;
   }
 
-  let cells = renderData(board);
-  console.log(winningSquares);
+  let cells = renderData(props.board);
   if (winningSquares) {
     for (let i = 0; i < winningSquares.length; i++) {
       let index = winningSquares[i].y * props.dimensions.x + winningSquares[i].x;
@@ -70,7 +68,7 @@ const Board = (props: BoardProps) => {
       gridTemplateColumns: `repeat(${props.dimensions.x}, 1fr)`
     }}>
       <AnimatePresence>
-        {inGame ? cells : null}
+        {props.active ? cells : null}
       </AnimatePresence>
     </div>
   );

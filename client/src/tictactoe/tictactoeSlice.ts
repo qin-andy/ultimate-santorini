@@ -44,9 +44,7 @@ const tictactoeSlice = createSlice({
     },
     gameWon(state, action) {
       console.log(action.payload);
-
       state.completed = true;
-      state.running = false;
       state.winningMark = action.payload.winningMark;
       state.winningSquares = action.payload.winningSquares;
       state.board = action.payload.board;
