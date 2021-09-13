@@ -2,17 +2,20 @@ import { Game } from "./game";
 import { Server } from 'socket.io';
 import { GameEvent, GameResponse } from "../types/types";
 import { GameManager } from "./gameManager";
+import { Player } from "./player";
 
 export class TicTacToeGame extends Game {
   turn: string;
   board: Array<string>;
-  dimensions: [x: number, y: number];
+  autoplay: boolean;
+  dimensions: { x: number, y: number };
 
-  constructor(name: string, io: Server, gameManager?: GameManager) {
+  constructor(name: string, io: Server, gameManager?: GameManager, autoplay = false) {
     super(name, io, gameManager);
     this.turn = '*';
     this.board = [];
-    this.dimensions = [0, 0];
+    this.dimensions = { x: 0, y: 0 };
+    this.autoplay = autoplay;
   }
 
   initializeHandlers() {
@@ -43,16 +46,42 @@ export class TicTacToeGame extends Game {
     super.handleEvent(event);
   }
 
-  // tic tac toe logic
-  start(x = 3, y = 3): GameResponse {
+  addPlayer(player: Player) {
+    super.addPlayer(player);
+    if (this.autoplay) { // if autoplay is true, autostart
+      let response = this.start();
+      if (!response.error) {
+        this.io.to(this.roomId).emit('game update', response);
+      }
+    }
+  }
 
+  removePlayer(id: string) {
+    let removedPlayer = super.removePlayer(id);
+    if (this.playerManager.getCount() <= 1) {
+      let response = {
+        error: false,
+        payload: {
+          name: removedPlayer?.name
+        },
+        type: 'win disconnect',
+        message: removedPlayer?.name + ' has disconnected!',
+      }
+      // TODO : test this
+      this.io.to(this.roomId).emit('game update', response);
+      this.active = false;
+      this.end(false);
+    }
+    return removedPlayer;
+  }
 
-    if (this.running || this.completed) {
+  start(x = 3, y = 3, firstTurn = 'o'): GameResponse {
+    if (this.running) {
       return {
         error: true,
         payload: null,
         type: 'start fail',
-        message: 'game already started or completed'
+        message: 'game already started!'
       }
     }
 
@@ -69,11 +98,12 @@ export class TicTacToeGame extends Game {
     this.teamMap.set(players[0].id, 'o');
     this.teamMap.set(players[1].id, 'x');
 
-    this.dimensions = [x, y];
+    this.dimensions = { x, y };
     this.board = new Array<string>(x * y);
     this.board.fill('*');
-    this.turn = 'o';
+    this.turn = firstTurn;
     this.running = true;
+    this.active = true;
     let response: GameResponse = {
       error: false,
       payload: {
@@ -81,12 +111,42 @@ export class TicTacToeGame extends Game {
         board: this.board,
         turn: this.turn,
         o: players[0].name,
-        x: players[1].name
+        x: players[1].name,
+        firstTurn: 'o',
       },
       type: 'start success',
       message: 'Game started!'
     }
     return response;
+  }
+
+  reset(turn = 'o') {
+    if (!this.active) {
+      let response = {
+        error: true,
+        payload: null,
+        type: 'reset fail',
+        message: 'game is no longer active!'
+      }
+      return response;
+    }
+    let response = this.start(this.dimensions.x, this.dimensions.y, turn);
+    if (response.error) {
+      response.type = 'reset fail';
+      return response;
+    }
+    response.type = 'reset success';
+    return response;
+  }
+
+  end(reset = false, delay = 3000) {
+    super.end();
+    if (reset && this.autoplay) {
+      let resetTimeout = setTimeout(() => {
+        let response = this.reset(this.turn);
+        this.io.to(this.roomId).emit('game update', response);
+      }, delay);
+    }
   }
 
   getBoardIndex(x: number, y: number): number {
@@ -146,7 +206,7 @@ export class TicTacToeGame extends Game {
         error: false,
         payload: {
           board: this.board,
-          mark: {x, y},
+          mark: { x, y },
           winner: this.board[squareIndex],
         },
         type: 'win',
@@ -171,8 +231,8 @@ export class TicTacToeGame extends Game {
   checkWin(x: number, y: number): boolean {
     let squareIndex = this.getBoardIndex(x, y);
     //info
-    let boardX = this.dimensions[0] - 1; // index, not length!
-    let boardY = this.dimensions[1] - 1;
+    let boardX = this.dimensions.x - 1; // index, not length!
+    let boardY = this.dimensions.y - 1;
     let player = this.board[squareIndex];
     let winSize = 3;
 

@@ -11,7 +11,7 @@ export class Game {
   name: string;
   roomId: string;
   running: boolean;
-  completed: boolean;
+  active: boolean;
   eventHandlerMap: Map<string, Function> // event name to handler
   teamMap: Map<string, string>; // id to team
   gameManager: undefined | GameManager;
@@ -22,7 +22,7 @@ export class Game {
     this.roomId = nanoid();
     this.io = io;
     this.running = false;
-    this.completed = false;
+    this.active = false;
     this.eventHandlerMap = new Map<string, Function>(); // event name to callback
     this.teamMap = new Map<string, string>(); // id to team
     this.gameManager = gameManager;
@@ -80,10 +80,9 @@ export class Game {
       message: 'player left the game!'
     });
     this.playerManager.removePlayer(id);
-
     // if game is empty, end it
     if (this.playerManager.getCount() === 0) {
-      this.end();
+      this.close();
     }
     return player;
   }
@@ -100,13 +99,11 @@ export class Game {
 
   end() {
     this.running = false;
-    this.completed = true;
-    if (this.gameManager) this.gameManager.closeGame(this);
   }
 
   close() {
     this.running = false;
-    this.completed = true;
+    this.active = false;
     this.playerManager.close();
     this.teamMap.clear();
     this.eventHandlerMap.clear();

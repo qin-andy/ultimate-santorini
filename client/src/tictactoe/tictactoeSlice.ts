@@ -5,6 +5,7 @@ interface TictactoeState {
   running: boolean,
   completed: boolean,
   winner: marking,
+  winningMark: null | {x: number, y: number},
   turn: marking,
   board: marking[],
   dimensions: {x: number, y: number},
@@ -15,6 +16,7 @@ const initialState: TictactoeState = {
   running: false,
   completed: false,
   winner: '*',
+  winningMark: null,
   turn: '*',
   board: [],
   dimensions: {x: 3, y: 3},
@@ -40,6 +42,7 @@ const tictactoeSlice = createSlice({
     gameWon(state, action) {
       state.completed = true;
       state.running = false;
+      state.winningMark = action.payload.mark;
       state.board = action.payload.board;
       state.winner = action.payload.winner;
     }

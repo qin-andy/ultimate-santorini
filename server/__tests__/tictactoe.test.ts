@@ -96,11 +96,34 @@ describe('tictactoe tests', () => {
         expect(game.teamMap.get(clientSockets[0].id)).toBe('o');
         expect(game.teamMap.get(clientSockets[1].id)).toBe('x');
       });
+
+      it('remove player midgame ends game and wins other player', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        game.start();
+        expect(game.running).toBe(true);
+        expect(game.active).toBe(true);
+        game.removePlayer(clientSockets[0].id);
+        expect(game.running).toBe(false);
+        expect(game.active).toBe(false);
+      });
+
+      it('remove player midgame emits disconnect notifies other player', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        game.start();
+        let responsePromise = responsePromiseFactory(1);
+        game.removePlayer(clientSockets[0].id);
+        let response = await responsePromise;
+        expect(response.type).toBe('player disconnect');
+      });
+    });
+
+    describe('game starting', () => {
+      it.todo('custom turn start marking');
     });
 
     describe('win checking', () => {
       it('board win test 1, diagonal', async () => {
-        game.dimensions = [3, 3];
+        game.dimensions = { x: 3, y: 3 };
         game.board = [
           'o', 'x', 'o',
           'x', 'o', 'x',
@@ -118,7 +141,7 @@ describe('tictactoe tests', () => {
       });
 
       it('board win test 2, rows', () => {
-        game.dimensions = [3, 3];
+        game.dimensions = { x: 3, y: 3 };
         game.board = [
           'o', 'o', 'o',
           'x', 'x', 'x',
@@ -138,7 +161,7 @@ describe('tictactoe tests', () => {
       });
 
       it('board win test 3, columns', () => {
-        game.dimensions = [3, 3];
+        game.dimensions = { x: 3, y: 3 };
         game.board = [
           'o', 'x', 'o',
           'o', 'x', 'o',
@@ -182,7 +205,7 @@ describe('tictactoe tests', () => {
         ];
         expect(response.error).toBe(false);
         expect(response.payload.turn).toBe('x');
-        expect(response.payload.mark).toStrictEqual({x: 1, y: 1});
+        expect(response.payload.mark).toStrictEqual({ x: 1, y: 1 });
         expect(response.payload.board).toStrictEqual(expectedBoard);
         expect(response.type).toBe('mark');
       });
@@ -373,6 +396,126 @@ describe('tictactoe tests', () => {
         expect(response.type).toBe('out of bounds');
       });
     });
+
+    describe('autoplay, active, and reset', () => {
+      describe('active state', () => {
+        it('active state set false on game start, true on start, false on player disconnect', async () => {
+          [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+          expect(game.active).toBe(false);
+          game.start();
+          expect(game.active).toBe(true);
+          game.removePlayer(clientSockets[0].id);
+          expect(game.active).toBe(false);
+        });
+      });
+
+      describe('reset response', () => {
+        it('reset successful on active games after ended once', async () => {
+          game = new TicTacToeGame('Test Game 1', io, undefined, true);
+          [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+          game.start();
+          game.end();
+          let response = game.reset();
+
+          expect(response.error).toBe(false);
+          expect(response.type).toBe('reset success');
+        });
+
+        it('reset successful resets game state and allows new marks', async () => {
+          game = new TicTacToeGame('Test Game 1', io, undefined, true);
+          [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+          game.start();
+          game.mark(clientSockets[0].id, 0, 0);
+          game.mark(clientSockets[1].id, 1, 2);
+
+          game.end();
+          let response = game.reset();
+
+          expect(response.error).toBe(false);
+          expect(response.type).toBe('reset success');
+          game.mark(clientSockets[0].id, 1, 1,);
+          expect(game.board).toStrictEqual([
+            '*', '*', '*',
+            '*', 'o', '*',
+            '*', '*', '*'
+          ])
+        });
+
+        it('reset fail on active games before start', async () => {
+          game = new TicTacToeGame('Test Game 1', io, undefined, true);
+          [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+          let response = game.reset();
+          expect(response.error).toBe(true);
+          expect(response.type).toBe('reset fail');
+        });
+
+        it('reset fail on active games after ended once without enough players', async () => {
+          game = new TicTacToeGame('Test Game 1', io, undefined, true);
+          [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+          game.start();
+          game.end();
+          game.removePlayer(clientSockets[0].id);
+          let response = game.reset();
+          expect(response.error).toBe(true);
+          expect(response.type).toBe('reset fail');
+        });
+
+        it('reset fails on games that are already running', async () => {
+          game = new TicTacToeGame('Test Game 1', io, undefined, true);
+          [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+          game.start();
+          game.removePlayer(clientSockets[0].id);
+          let response = game.reset();
+          expect(response.error).toBe(true);
+          expect(response.type).toBe('reset fail');
+        });
+      });
+
+      describe('autoplay state and tests', () => {
+        it('autoplay defaults false', async () => {
+          expect(game.autoplay).toBe(false);
+        });
+
+        it('autoplay constructor sets autoplay true', async () => {
+          game = new TicTacToeGame('Test Game 1', io, undefined, true);
+          expect(game.autoplay).toBe(true);
+        });
+
+        it('autoplay game automatically starts when two players join', async () => {
+          game = new TicTacToeGame('Test Game 1', io, undefined, true);
+          expect(game.running).toBe(false);
+          expect(game.active).toBe(false);
+          [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+          expect(game.running).toBe(true);
+          expect(game.active).toBe(true);
+        });
+
+        it.todo('autoplay game emits start to all players when two players join');
+
+        // end emits correct info
+        it('end withautoplay delays reset and emits correctly', async () => {
+          game = new TicTacToeGame('Test Game 1', io, undefined, true);
+          [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+          game.start();
+          game.end(true, 100);
+          let p1 = responsePromiseFactory(0);
+          let p2 = responsePromiseFactory(1);
+          await sleepFactory(100);
+          let response1 = await p1;
+          let response2 = await p2;
+          expect(response1.error).toBe(false);
+          expect(response1.type).toBe('reset success');
+          expect(response2.error).toBe(false);
+          expect(response2.type).toBe('reset success');
+          game.mark(clientSockets[0].id, 1, 1);
+          expect(game.board).toStrictEqual([
+            '*', '*', '*',
+            '*', 'o', '*',
+            '*', '*', '*'
+          ]);
+        });
+      });
+    });
   });
 
   describe('event tests', () => {
@@ -417,15 +560,8 @@ describe('tictactoe tests', () => {
       let startResponsePromise1 = responsePromiseFactory(0);
       clientSockets[0].emit('game action', 'tictactoe start', null);
       let response1 = await startResponsePromise1;
-      let expectedResponse = {
-        error: true,
-        payload: 1,
-        type: 'start fail',
-        message: 'Game can only start with 2 players!'
-      }
       expect(response1.type).toBe('start fail');
       expect(response1.error).toBe(true);
-
     });
 
     it('start game twice responds with error', async () => {

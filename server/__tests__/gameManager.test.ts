@@ -369,6 +369,17 @@ describe('game manager tests', () => {
         expect(response.payload).toBe(player.id);
         expect(response.error).toBe(true);
       });
+
+      it('join active game gives error', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 3);
+        let newGame = new Game('Direct Set Game', io)
+        gameManager.gamesMap.set('Direct Set Game', newGame);
+        await joinGameFactory(clientSockets[0], 'Direct Set Game');
+        await joinGameFactory(clientSockets[1], 'Direct Set Game');
+        newGame.active = true;
+        let response = await joinGameFactory(clientSockets[2], 'Direct Set Game');
+        expect(response.error).toBe(true);
+      });
     });
 
     describe('event player info', () => {

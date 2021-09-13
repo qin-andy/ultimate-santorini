@@ -150,6 +150,17 @@ export class GameManager {
         return response;
       }
 
+      if (game.active) {
+        let response = {
+          error: true,
+          type: 'join game',
+          payload: event.payload,
+          message: 'Game actively in progress: ' + event.payload
+        }
+        event.acknowledger(response);
+        return response;
+      }
+
       let response: ManagerResponse = {
         error: false,
         type: 'join game',

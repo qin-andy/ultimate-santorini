@@ -122,7 +122,6 @@ describe('game class tests', () => {
       game.removePlayer(players[0].id);
       game.removePlayer(players[1].id);
 
-      expect(game.completed).toBe(true);
       expect(game.running).toBe(false);
     });
 
@@ -221,14 +220,6 @@ describe('game class tests', () => {
       expect(responses[0].type).toBe('player disconnect');
       expect(responses[1].type).toBe('player disconnect');
       expect(responses[0].payload.id).toBe(expectedId);
-    });
-  });
-
-  describe('closing and ending', () => {
-    it('end game sets completed to false', async () => {
-      [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
-      game.end();
-      expect(game.completed).toBe(true);
     });
   });
 });

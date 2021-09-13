@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Card, Col, Form, ListGroup, Row, Container } from 'react-bootstrap';
 
-import DefaultPage from '../components/DefaultPage';
 import socket, { createGame, getPlayerInfo, joinGame, leaveGame, tictactoeStart } from '../services/socket';
 import Board from '../tictactoe/Board';
 import { useAppDispatch, useAppSelector } from '../hooks/hooks';
 import { GameResponse, ManagerResponse, marking } from '../types';
+import { motion, AnimateSharedLayout } from 'framer-motion';
 
 const ManagerPage = () => {
   const dispatch = useAppDispatch();
@@ -33,7 +33,9 @@ const ManagerPage = () => {
       } else if (response.type === 'win') {
         dispatch({
           type: 'tictactoe/gameWon', payload: {
-            winner: response.payload.winner, board: response.payload.board
+            winner: response.payload.winner,
+            board: response.payload.board,
+            winningMark: response.payload.mark
           }
         });
       }
@@ -50,7 +52,7 @@ const ManagerPage = () => {
     });
 
     let refreshInfo = setInterval(() => {
-      getPlayerInfo('');
+      // getPlayerInfo('');
     }, 500);
 
     return () => {
@@ -61,8 +63,8 @@ const ManagerPage = () => {
   }, []);
 
   return (
-    <Container fluid className='w-100'>
-      <Row className='w-100'>
+    <Container fluid className='w-100 d-flex flex-column justify-content-center'>
+      <Row className='w-100 d-flex flex-row align-items-center'>
         <Col sm={4} className='p-2 d-flex flex-column text-center'>
           <h1>Controls</h1>
           <Form onSubmit={e => e.preventDefault()}>
@@ -86,16 +88,18 @@ const ManagerPage = () => {
           <PlayerInfoCard />
         </Col>
         <Col sm={4} className='p-2 d-flex flex-column align-items-center text-center'>
-          <h1>{gameName ? gameName : 'Waiting to Join Game'}</h1>
-          <Board dimensions={{x: 3, y: 3}} />
-          {won ? <h2>Winner: {winner}</h2> : null}
+          <AnimateSharedLayout>
+            <motion.h1 layout>{gameName ? gameName : 'Waiting to Join Game'}</motion.h1>
+            <Board dimensions={{ x: 3, y: 3 }} />
+            <motion.h2 layout>Winner: {winner}</motion.h2>
+          </AnimateSharedLayout>
         </Col>
         <Col sm={4} className='p-2 d-flex flex-column align-items-center'>
           <LatestGameResponseCard />
           <LatestManagerResponseCard />
         </Col>
       </Row>
-    </Container>
+    </Container >
   );
 }
 
