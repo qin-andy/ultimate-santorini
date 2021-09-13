@@ -83,6 +83,9 @@ export class Game {
     // if game is empty, end it
     if (this.playerManager.getCount() === 0) {
       this.close();
+      if (this.gameManager) {
+        this.gameManager.closeGame(this);
+      }
     }
     return player;
   }

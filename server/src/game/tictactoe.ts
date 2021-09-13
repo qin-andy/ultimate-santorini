@@ -135,13 +135,17 @@ export class TicTacToeGame extends Game {
       response.type = 'reset fail';
       return response;
     }
-    response.type = 'reset success';
+    response.type = 'start success';
     return response;
   }
 
   end(reset = false, delay = 3000) {
-    super.end();
-    if (reset && this.autoplay) {
+      console.log('resetting in 3000!');
+      this.running = false;
+    if (this.autoplay) { // TODO : whts the point of reset variable if it depends on autoplay?
+      // TODO : The point of the reset flag is to differentiate between a natural gameend (win)
+      // and an artifical game end (player leaves game)
+      console.log('resetting game!');
       let resetTimeout = setTimeout(() => {
         let response = this.reset(this.turn);
         this.io.to(this.roomId).emit('game update', response);

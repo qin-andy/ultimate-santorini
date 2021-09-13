@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { marking } from '../types';
-import { Col, Row } from 'react-bootstrap';
 import Cell from './Cell';
 import './tictactoe.scss'
 import { ReactElement } from 'react';

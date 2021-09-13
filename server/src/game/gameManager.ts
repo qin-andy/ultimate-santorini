@@ -214,7 +214,6 @@ export class GameManager {
     };
 
     let createGameHandler = (event: ManagerEvent) => {
-      // payload: { name: string, type: string }
       let player = this.playersMap.get(event.id);
       if (!player) {
         let response = {
@@ -252,7 +251,12 @@ export class GameManager {
       player.inGame = true;
       let game: Game;
       if (event.payload.type === 'tictactoe') {
-        game = new TicTacToeGame(event.payload.name, this.io, this)
+        if (event.payload.autoplay) {
+          game = new TicTacToeGame(event.payload.name, this.io, this, true);
+          console.log('Autoplay game created!');
+        } else {
+          game = new TicTacToeGame(event.payload.name, this.io, this);
+        }
       } else {
         game = new Game(event.payload.name, this.io, this)
       }

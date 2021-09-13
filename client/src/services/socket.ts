@@ -17,7 +17,7 @@ export const leaveGame = (name: string) => { // TODO : timeouts?
 
 export const createGame = (name: string) => {
   return new Promise<any>(resolve => {
-    let payload = {name, type: 'tictactoe'}
+    let payload = { name, type: 'tictactoe', autoplay: true }
     socket.emit('manager action', 'create game', payload, resolve);
   });
 }
@@ -37,7 +37,7 @@ export const tictactoeStart = () => {
 
 export const tictactoeMark = (x: number, y: number) => {
   return new Promise<void>(resolve => {
-    socket.emit('game action', 'tictactoe mark', {x, y});
+    socket.emit('game action', 'tictactoe mark', { x, y });
     resolve();
   });
 }

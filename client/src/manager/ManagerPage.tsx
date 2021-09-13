@@ -52,7 +52,7 @@ const ManagerPage = () => {
     });
 
     let refreshInfo = setInterval(() => {
-      // getPlayerInfo('');
+      getPlayerInfo('');
     }, 500);
 
     return () => {

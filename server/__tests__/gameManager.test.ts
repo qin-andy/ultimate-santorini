@@ -295,6 +295,8 @@ describe('game manager tests', () => {
         expect(response.payload).toBe(player.id);
         expect(response.error).toBe(true);
       });
+
+      it.todo('create autoplay game creates autoplay game');
     });
 
     describe('event join game', () => {
