@@ -1,17 +1,16 @@
 import { io } from "socket.io-client";
 
-// const socket = io(''); // intentionally blank
 const socket = io('http://localhost:3001');
 
-export const joinGame = (name: string) => { // TODO : timeouts?
+export const joinGame = (name: string) => {
   return new Promise<any>(resolve => {
     socket.emit('manager action', 'join game', name, resolve);
   });
 }
 
-export const leaveGame = (name: string) => { // TODO : timeouts?
+export const leaveGame = () => {
   return new Promise<any>(resolve => {
-    socket.emit('manager action', 'leave game', name, resolve);
+    socket.emit('manager action', 'leave game', null, resolve);
   });
 }
 
@@ -47,6 +46,5 @@ export const tictactoeMark = (x: number, y: number) => {
     resolve();
   });
 }
-
 
 export default socket;

@@ -1,5 +1,6 @@
 import express from 'express';
 import http from 'http';
+import path from 'path';
 import { Server } from 'socket.io';
 import { GameManager } from './game/gameManager';
 
@@ -11,12 +12,10 @@ const io = new Server(server, {
   }
 });
 
-app.get('/', (req, res) => {
-  res.send("Hello, world!");
-});
-
-
 let gameManager = new GameManager(io);
+
+const publicPath = path.join(__dirname, '..', '..', 'client', 'build');
+app.use(express.static(publicPath));
 
 app.get('/info', (req, res) => {
   let info: any = {};
@@ -38,6 +37,10 @@ io.on('connect', (socket) => {
 
 io.on('disconnect', (socket) => {
   console.log(socket.id + ': disconnected!');
+});
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 export default server;

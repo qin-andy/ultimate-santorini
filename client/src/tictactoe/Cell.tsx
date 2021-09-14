@@ -57,7 +57,7 @@ const Cell = (props: CellProps) => {
         duration: 0.4,
         delay: delay * 2
       }
-    },
+    }
   }
 
   const markingVariants = {
@@ -81,7 +81,6 @@ const Cell = (props: CellProps) => {
       opacity: 1,
       scale: 1,
       transition: {
-        repeat: Infinity,
         duration: 1.5,
         type: 'spring',
         bounce: 0.5
@@ -113,7 +112,6 @@ const Cell = (props: CellProps) => {
             animate={props.winningSquare ? 'winningSquare' : 'marked'}
             exit={'unmarked'}
             variants={markingVariants}
-
             src={`${props.marking}.svg`}
             alt={props.marking}
           />

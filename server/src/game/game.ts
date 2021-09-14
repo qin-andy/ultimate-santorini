@@ -16,7 +16,7 @@ export class Game {
   teamMap: Map<string, string>; // id to team
   gameManager: undefined | GameManager;
 
-  constructor(name: string, io: Server, gameManager?: GameManager) {
+  constructor(name: string, io: Server, gameManager?: GameManager, settings?: any) {
     this.name = name;
     this.playerManager = new PlayerManager();
     this.roomId = nanoid();

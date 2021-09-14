@@ -5,6 +5,7 @@ import { Server } from 'socket.io';
 import { ManagerEvent, ManagerResponse } from "../types/types";
 import { response } from "express";
 import { TicTacToeAutoGame } from "./tictactoeAuto";
+import { nanoid } from "nanoid";
 
 export class GameManager {
   gamesMap: Map<string, Game>;
@@ -25,7 +26,7 @@ export class GameManager {
     this.initializeHandlers();
   }
 
-  startQueueLoop(time: number = 10000) {
+  startQueueLoop(time: number = 10000) { // TODO : remove
     let timer = setInterval(() => {
       // this.matchmakePlayersInQueue();
     }, time);
@@ -59,7 +60,8 @@ export class GameManager {
         return false;
       }
 
-      let newGame = new TicTacToeAutoGame(player1id + player2id, this.io);
+      // let newGame = new TicTacToeAutoGame(player1id + player2id, this.io, this, {x: 9, y: 9, winSize: 5});
+      let newGame = new TicTacToeAutoGame(player1id + player2id, this.io, this, {x: 3, y: 3, winSize: 3});
       newGame.addPlayer(player1);
       newGame.addPlayer(player2);
       this.gamesMap.set(newGame.name, newGame);
@@ -70,7 +72,8 @@ export class GameManager {
         type: 'queue game found',
         message: 'game found!'
       }
-      this.io.to(newGame.roomId).emit('manager response', response);
+      this.io.to(player1.socket.id).emit('manager response', response);
+      this.io.to(player2.socket.id).emit('manager response', response);
       return true;
     }
     return false;
@@ -310,7 +313,7 @@ export class GameManager {
 
   attachListeners(io: Server, dev: boolean = false) {
     io.on('connect', (socket) => {
-      this.playersMap.set(socket.id, new Player(socket, 'New Player'));
+      this.playersMap.set(socket.id, new Player(socket, nanoid()));
       socket.on('manager action', (type: string, payload: any, acknowledger: Function) => {
         let handler = this.eventHandlerMap.get(type);
         if (handler) {
@@ -338,6 +341,15 @@ export class GameManager {
           this.closeGame(currentGame);
         }
         this.playersMap.delete(socket.id);
+      });
+
+      let disconnectTimeout: NodeJS.Timeout;
+      socket.onAny(() => {
+        clearTimeout(disconnectTimeout);
+        disconnectTimeout = setTimeout(() => {
+          this.playersMap.get(socket.id)?.currentGame?.removePlayer(socket.id);
+          socket.disconnect();
+        }, 300000);
       });
     });
   }

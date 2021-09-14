@@ -80,7 +80,7 @@ const ManagerPage = () => {
           </Form>
           <Button variant='outline-danger' onClick={() => createGame(inputGame)}>Create</Button>
           <Button variant='outline-secondary' onClick={() => joinGame(inputGame)}>Join</Button>
-          <Button variant='outline-primary' onClick={() => leaveGame(inputGame)}>Leave</Button>
+          <Button variant='outline-primary' onClick={() => leaveGame()}>Leave</Button>
           <Button variant='outline-primary' onClick={() => tictactoeStart()}>Start</Button>
           <PlayerInfoCard />
         </Col>

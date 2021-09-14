@@ -24,6 +24,7 @@ const Board = (props: BoardProps) => {
   });
 
   function onCellClick(x: number, y: number) {
+    console.log(x, y)
     tictactoeMark(x, y);
   }
 
@@ -56,14 +57,9 @@ const Board = (props: BoardProps) => {
   }
 
   let cells = renderData(props.board);
-  if (winningSquares) {
-    for (let i = 0; i < winningSquares.length; i++) {
-      let index = winningSquares[i].y * props.dimensions.x + winningSquares[i].x;
-    }
-  }
 
   return (
-    <div className='m-3 tictactoe-grid' style={{
+    <div className='tictactoe-grid' style={{
       display: `grid`,
       gridTemplateColumns: `repeat(${props.dimensions.x}, 1fr)`
     }}>

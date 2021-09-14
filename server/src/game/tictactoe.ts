@@ -8,14 +8,16 @@ export class TicTacToeGame extends Game {
   turn: string;
   board: Array<string>;
   dimensions: { x: number, y: number };
+  settings: any;
   squaresMarked: number;
 
-  constructor(name: string, io: Server, gameManager?: GameManager) {
+  constructor(name: string, io: Server, gameManager?: GameManager, settings = {x: 3, y: 3, winSize: 3}) {
     super(name, io, gameManager);
     this.turn = '*';
     this.board = [];
     this.dimensions = { x: 0, y: 0 };
     this.squaresMarked = 0;
+    this.settings = settings;
   }
 
   initializeHandlers() {
@@ -61,7 +63,7 @@ export class TicTacToeGame extends Game {
     return removedPlayer;
   }
 
-  start(x = 3, y = 3, firstTurn = 'o'): GameResponse {
+  start(x = this.settings.x, y = this.settings.y, firstTurn = 'o'): GameResponse {
     if (this.running) {
       return {
         error: true,
@@ -223,7 +225,7 @@ export class TicTacToeGame extends Game {
     let boardX = this.dimensions.x - 1; // index, not length!
     let boardY = this.dimensions.y - 1;
     let player = this.board[squareIndex];
-    let winSize = 3;
+    let winSize = this.settings.winSize;
     let winningSquares: Array<{ x: number, y: number }> = [];
 
     // columns nad rows

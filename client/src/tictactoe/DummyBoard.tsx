@@ -40,8 +40,6 @@ const DummyBoard = (props: BoardProps) => {
     } else {
       newBoard[y * props.dimensions.x + x] = '*';
     }
-    console.log(board);
-
     dispatch({ type: 'tictactoe/boardUpdated', payload: newBoard });
   }
 

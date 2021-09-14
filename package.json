@@ -2,5 +2,10 @@
   "name": "lobby-game",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["server", "client"]
+  "workspaces": ["server", "client"],
+  "scripts": {
+    "build": "cd client && yarn build",
+    "postinstall": "tsc",
+    "start": "node server/build/server.js"
+  }
 }

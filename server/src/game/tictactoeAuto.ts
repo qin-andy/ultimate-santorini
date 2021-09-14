@@ -5,9 +5,6 @@ import { TicTacToeGame } from "./tictactoe";
 
 export class TicTacToeAutoGame extends TicTacToeGame {
   resetTimeout: NodeJS.Timeout | undefined;
-  constructor(name: string, io: Server, gameManager?: GameManager) {
-    super(name, io, gameManager);
-  }
 
   addPlayer(player: Player) {
     // Automatically fires a game start event whenter a player joins
@@ -34,7 +31,6 @@ export class TicTacToeAutoGame extends TicTacToeGame {
       type: 'win',
       message: this.board[squareIndex] + ' has won!',
     }
-    console.log(response);
     return response;
   }
 
