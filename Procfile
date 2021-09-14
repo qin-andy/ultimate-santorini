@@ -1,1 +1,1 @@
-web: ts-node ./server/src/server.ts
+web: node ./server/build/server.js
