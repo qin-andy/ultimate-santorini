@@ -5,7 +5,7 @@
   "workspaces": ["server", "client"],
   "scripts": {
     "build": "cd client && yarn build",
-    "postinstall": "tsc",
+    "postinstall": "cd server && tsc",
     "start": "node server/build/server.js"
   }
 }
