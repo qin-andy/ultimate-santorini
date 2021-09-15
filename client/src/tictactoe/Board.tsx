@@ -17,6 +17,7 @@ const Board = (props: BoardProps) => {
   const winningSquares = useAppSelector(state => state.tictactoe.winningSquares);
 
   useEffect(() => {
+    // Preload images
     const xImg = new Image();
     const oImg = new Image();
     xImg.src = 'x.svg';
@@ -24,7 +25,6 @@ const Board = (props: BoardProps) => {
   });
 
   function onCellClick(x: number, y: number) {
-    console.log(x, y)
     tictactoeMark(x, y);
   }
 
@@ -36,7 +36,7 @@ const Board = (props: BoardProps) => {
     }
   }
 
-  function renderData(data: marking[]): ReactElement[] {
+  function buildBoardCells(data: marking[]): ReactElement[] {
     let cells = [];
     for (let i = 0; i < props.dimensions.y; i++) {
       for (let j = 0; j < props.dimensions.x; j++) {
@@ -56,15 +56,13 @@ const Board = (props: BoardProps) => {
     return cells;
   }
 
-  let cells = renderData(props.board);
-
   return (
     <div className='tictactoe-grid' style={{
       display: `grid`,
       gridTemplateColumns: `repeat(${props.dimensions.x}, 1fr)`
     }}>
       <AnimatePresence>
-        {props.active ? cells : null}
+        {props.active ? buildBoardCells(props.board) : null}
       </AnimatePresence>
     </div>
   );

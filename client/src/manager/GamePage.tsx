@@ -11,9 +11,8 @@ const GamePage = () => {
   const dispatch = useAppDispatch();
   const running = useAppSelector(state => state.tictactoe.running);
   const turn = useAppSelector(state => state.tictactoe.turn);
-  const board: marking[] = useAppSelector(state => state.tictactoe.board);
+  const board = useAppSelector(state => state.tictactoe.board);
   const dimensions = useAppSelector(state => state.tictactoe.dimensions)
-
   const [showBoard, setShowBoard] = useState(false);
 
   useEffect(() => {
@@ -39,11 +38,12 @@ const GamePage = () => {
       if (response.type === 'start success' || response.type === 'reset success') {
         let board: marking[] = new Array<marking>(response.payload.size.x * response.payload.size.y);
         board.fill('*');
-        let payload = {
-          x: response.payload.size.x, y: response.payload.size.y, board,
-          o: response.payload.o, turn: response.payload.turn
-        }
-        dispatch({ type: 'tictactoe/gameStarted', payload });
+        dispatch({
+          type: 'tictactoe/gameStarted', payload: {
+            x: response.payload.size.x, y: response.payload.size.y, board,
+            o: response.payload.o, turn: response.payload.turn
+          }
+        });
       } else if (response.type === 'mark') {
         dispatch({
           type: 'tictactoe/boardUpdated', payload: {
@@ -94,6 +94,22 @@ const GamePage = () => {
     return () => clearTimeout(timeout);
   }, [running]);
 
+  return (
+    <Container fluid className='w-100 d-flex flex-column justify-content-center align-items-center'>
+      <Row className='w-75 d-flex flex-row justify-content-center align-items-center'>
+        <Col className='d-flex w-50 flex-row align-items-center justify-content-around text-center'>
+          <AnimateSharedLayout>
+            <TurnMarker turn={turn} indicator='o' running={running} />
+            <Board dimensions={{ x: dimensions.x, y: dimensions.y }} board={board} active={showBoard} />
+            <TurnMarker turn={turn} indicator='x' running={running} />
+          </AnimateSharedLayout>
+        </Col>
+      </Row>
+    </Container >
+  );
+}
+
+const TurnMarker = (props: { running: boolean, turn: marking, indicator: marking }) => {
   const markingVariants = {
     marked: {
       opacity: 1, scale: 0.5, rotate: 0,
@@ -123,38 +139,18 @@ const GamePage = () => {
   }
 
   return (
-    <Container fluid className='w-100 d-flex flex-column justify-content-center align-items-center'>
-      <Row className='w-75 d-flex flex-row justify-content-center align-items-center'>
-        <Col className='d-flex w-50 flex-row align-items-center justify-content-around text-center'>
-          <AnimateSharedLayout>
-            <motion.img
-              className='cell-mark'
-              key='svg image 1'
-              variants={markingVariants}
-              initial={'unmarked'}
-              animate={turn === 'o' && running ? 'winningSquare' : 'marked'}
-              exit={'unmarked'}
-              src={`o.svg`}
-              alt={'o'}
-              layout
-            />
-            <Board dimensions={{ x: dimensions.x , y: dimensions.y }} board={board} active={showBoard} />
-            <motion.img
-              className='cell-mark'
-              key='svg image 2'
-              variants={markingVariants}
-              initial={'unmarked'}
-              animate={turn === 'x' && running ? 'winningSquare' : 'marked'}
-              exit={'unmarked'}
-              src={`x.svg`}
-              alt={'x'}
-              layout
-            />
-          </AnimateSharedLayout>
-        </Col>
-      </Row>
-    </Container >
-  );
+    <motion.img
+      className='cell-mark'
+      key='svg image 2'
+      variants={markingVariants}
+      initial={'unmarked'}
+      animate={props.turn === props.indicator && props.running ? 'winningSquare' : 'marked'}
+      exit={'unmarked'}
+      src={`${props.indicator}.svg`}
+      alt={'x'}
+      layout
+    />
+  )
 }
 
 export default GamePage;

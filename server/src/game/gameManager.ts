@@ -3,16 +3,17 @@ import { Player } from "./player";
 import { TicTacToeGame } from './tictactoe';
 import { Server } from 'socket.io';
 import { ManagerEvent, ManagerResponse } from "../types/types";
-import { response } from "express";
 import { TicTacToeAutoGame } from "./tictactoeAuto";
 import { nanoid } from "nanoid";
+
+const DISCONNECT_TIMEOUT = 300000; // 5 minutes
+const QUEUE_TICTACTOE_SETTINGS = { x: 3, y: 3, winSize: 3 };
 
 export class GameManager {
   gamesMap: Map<string, Game>;
   playersMap: Map<string, Player>;
   matchmakingQueue: Array<string>;
   eventHandlerMap: Map<string, Function>;
-  queueLoopId: NodeJS.Timer;
 
   io: Server;
   constructor(io: Server) {
@@ -21,16 +22,8 @@ export class GameManager {
     this.playersMap = new Map<string, Player>();
     this.matchmakingQueue = [];
     this.eventHandlerMap = new Map<string, Function>();
-    this.queueLoopId = this.startQueueLoop();
     this.attachListeners(io);
     this.initializeHandlers();
-  }
-
-  startQueueLoop(time: number = 10000) { // TODO : remove
-    let timer = setInterval(() => {
-      // this.matchmakePlayersInQueue();
-    }, time);
-    return timer;
   }
 
   closeGame(game: Game) {
@@ -60,8 +53,9 @@ export class GameManager {
         return false;
       }
 
+      // Mokugo variant:
       // let newGame = new TicTacToeAutoGame(player1id + player2id, this.io, this, {x: 9, y: 9, winSize: 5});
-      let newGame = new TicTacToeAutoGame(player1id + player2id, this.io, this, {x: 3, y: 3, winSize: 3});
+      let newGame = new TicTacToeAutoGame(player1id + player2id, this.io, this, QUEUE_TICTACTOE_SETTINGS);
       newGame.addPlayer(player1);
       newGame.addPlayer(player2);
       this.gamesMap.set(newGame.name, newGame);
@@ -349,7 +343,7 @@ export class GameManager {
         disconnectTimeout = setTimeout(() => {
           this.playersMap.get(socket.id)?.currentGame?.removePlayer(socket.id);
           socket.disconnect();
-        }, 300000);
+        }, DISCONNECT_TIMEOUT);
       });
     });
   }
@@ -372,7 +366,6 @@ export class GameManager {
     this.gamesMap.clear();
     this.playersMap.clear();
     this.matchmakingQueue = [];
-    clearInterval(this.queueLoopId);
     this.io.removeAllListeners();
   }
 }

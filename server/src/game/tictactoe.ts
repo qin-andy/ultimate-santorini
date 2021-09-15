@@ -55,7 +55,6 @@ export class TicTacToeGame extends Game {
         type: 'win disconnect',
         message: removedPlayer?.name + ' has disconnected!',
       }
-      // TODO : test this
       this.io.to(this.roomId).emit('game update', response);
       this.active = false;
       this.end();
@@ -135,8 +134,8 @@ export class TicTacToeGame extends Game {
       return {
         error: true,
         payload: { x, y },
-        type: 'out of bounds', // TODO : square error?
-        message: 'Invalid square, out of bounds' // TODO : include board dimensions and squares
+        type: 'out of bounds',
+        message: 'Invalid square, out of bounds'
       }
     }
 

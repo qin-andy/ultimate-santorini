@@ -351,6 +351,22 @@ describe('tictactoe tests', () => {
           expect(response.error).toBe(true);
           expect(response.type).toBe('not running');
         });
+
+      it('mark board tie mark ties', async () => {
+        [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
+        game.start();
+        game.squaresMarked = 8;
+        game.board = [
+          '*', 'x', 'x',
+          'x', 'o', 'o',
+          'o', 'x', 'x'
+        ];
+        game.turn = 'o';
+        let response = game.mark(clientSockets[0].id, 0, 0);
+        expect(response.error).toBe(false);
+        expect(response.type).toBe('tie');
+        expect(game.running).toBe(false);
+      });
       });
     });
   });
