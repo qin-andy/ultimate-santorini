@@ -4,7 +4,7 @@ const socket = io();
 
 export const joinGame = (name: string) => {
   return new Promise<any>(resolve => {
-    socket.emit('manager action', 'join game', name, resolve);
+    socket.emit('manager action', 'join game', { name }, resolve);
   });
 }
 

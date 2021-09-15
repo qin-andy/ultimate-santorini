@@ -29,3 +29,5 @@ export interface ManagerResponse {
   type: string,
   message: string
 }
+
+export type ManagerHandler = (event: ManagerEvent) => ManagerResponse;

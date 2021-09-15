@@ -2,7 +2,7 @@ import { Game } from "./game";
 import { Player } from "./player";
 import { TicTacToeGame } from './tictactoe';
 import { Server } from 'socket.io';
-import { ManagerEvent, ManagerResponse } from "../types/types";
+import { GameResponse, ManagerEvent, ManagerResponse, ManagerHandler } from "../types/types";
 import { TicTacToeAutoGame } from "./tictactoeAuto";
 import { nanoid } from "nanoid";
 
@@ -13,7 +13,7 @@ export class GameManager {
   gamesMap: Map<string, Game>;
   playersMap: Map<string, Player>;
   matchmakingQueue: Array<string>;
-  eventHandlerMap: Map<string, Function>;
+  eventHandlerMap: Map<string, ManagerHandler>;
 
   io: Server;
   constructor(io: Server) {
@@ -21,7 +21,7 @@ export class GameManager {
     this.gamesMap = new Map<string, Game>();
     this.playersMap = new Map<string, Player>();
     this.matchmakingQueue = [];
-    this.eventHandlerMap = new Map<string, Function>();
+    this.eventHandlerMap = new Map<string, ManagerHandler>();
     this.attachListeners(io);
     this.initializeHandlers();
   }
@@ -74,20 +74,17 @@ export class GameManager {
   }
 
   initializeHandlers() {
-    let pingHandler = (event: ManagerEvent) => {
-      // payload: null
+    let pingHandler: ManagerHandler = (event) => {
       let response: ManagerResponse = {
         error: false,
         type: 'ping',
         payload: 'pong',
         message: 'ping response is pong'
       }
-      event.acknowledger(response);
       return response;
     };
 
-    let joinQueueHandler = (event: ManagerEvent) => {
-      // payload: null
+    let joinQueueHandler: ManagerHandler = (event)=> {
       let response: ManagerResponse = {
         error: false,
         type: 'join queue',
@@ -100,23 +97,20 @@ export class GameManager {
           player.inGame = true;
           this.matchmakingQueue.push(player.id);
           this.matchmakePlayersInQueue();
-          event.acknowledger(response);
         } else {
           response.message = 'player already in game!';
           response.error = true;
-          event.acknowledger(response);
         }
       } else {
         response.message = 'player does not exist!';
         response.error = true;
-        event.acknowledger(response);
       }
       return response;
     };
 
-    let joinGameHandler = (event: ManagerEvent) => {
+    let joinGameHandler: ManagerHandler = (event) => {
       // payload: game name that the player is attempting tojoin
-      let game = this.gamesMap.get(event.payload);
+      let game = this.gamesMap.get(event.payload.name);
       let player = this.playersMap.get(event.id);
 
       if (!player) {
@@ -126,7 +120,6 @@ export class GameManager {
           payload: event.id,
           message: 'player does not exist!'
         }
-        event.acknowledger(response);
         return response;
       }
 
@@ -137,7 +130,6 @@ export class GameManager {
           payload: player.currentGame?.name,
           message: 'Player already in game: ' + player.currentGame?.name
         }
-        event.acknowledger(response);
         return response;
       }
 
@@ -148,7 +140,6 @@ export class GameManager {
           payload: event.payload,
           message: 'game does not exist: ' + event.payload
         }
-        event.acknowledger(response);
         return response;
       }
 
@@ -159,7 +150,6 @@ export class GameManager {
           payload: event.payload,
           message: 'Game actively in progress: ' + event.payload
         }
-        event.acknowledger(response);
         return response;
       }
 
@@ -169,13 +159,13 @@ export class GameManager {
         payload: event.payload,
         message: ''
       }
+
       player.inGame = true;
       game.addPlayer(player);
-      event.acknowledger(response);
       return response;
     };
 
-    let leaveGameHandler = (event: ManagerEvent) => {
+    let leaveGameHandler: ManagerHandler = (event) => {
       let player = this.playersMap.get(event.id);
       // if player doesn't exist
       if (!player) {
@@ -185,7 +175,6 @@ export class GameManager {
           payload: event.id,
           message: 'player does not exist!'
         }
-        event.acknowledger(response);
         return response;
       }
 
@@ -197,7 +186,6 @@ export class GameManager {
           payload: null,
           message: 'player not in game!'
         }
-        event.acknowledger(response);
         return response;
       }
 
@@ -211,11 +199,10 @@ export class GameManager {
         payload: gameName,
         message: 'left game ' + gameName
       };
-      event.acknowledger(response);
       return response;
     };
 
-    let createGameHandler = (event: ManagerEvent) => {
+    let createGameHandler: ManagerHandler = (event) => {
       let player = this.playersMap.get(event.id);
       if (!player) {
         let response = {
@@ -224,7 +211,6 @@ export class GameManager {
           payload: event.id,
           message: 'player does not exist!'
         }
-        event.acknowledger(response);
         return response;
       }
 
@@ -235,7 +221,6 @@ export class GameManager {
           payload: player.currentGame?.name,
           message: 'Player already in game: ' + player.currentGame?.name
         }
-        event.acknowledger(response);
         return response;
       }
 
@@ -246,7 +231,6 @@ export class GameManager {
           payload: event.payload.name,
           message: 'Game name already exists: ' + event.payload.name
         }
-        event.acknowledger(response);
         return response;
       }
 
@@ -269,11 +253,10 @@ export class GameManager {
         payload: event.payload.name,
         message: 'Game created: ' + event.payload.name
       }
-      event.acknowledger(response);
       return response;
     };
 
-    let playerInfoHandler = (event: ManagerEvent) => {
+    let playerInfoHandler: ManagerHandler = (event) => {
       let player = this.playersMap.get(event.id);
       if (!player) return {
         error: true,
