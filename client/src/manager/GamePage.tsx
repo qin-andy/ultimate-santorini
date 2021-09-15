@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Col, Row, Container } from 'react-bootstrap';
 
 import socket, { getPlayerInfo, joinQueue, leaveGame } from '../services/socket';
 import Board from '../tictactoe/Board';
@@ -95,17 +94,15 @@ const GamePage = () => {
   }, [running]);
 
   return (
-    <Container fluid className='w-100 d-flex flex-column justify-content-center align-items-center'>
-      <Row className='w-75 d-flex flex-row justify-content-center align-items-center'>
-        <Col className='d-flex w-50 flex-row align-items-center justify-content-around text-center'>
-          <AnimateSharedLayout>
-            <TurnMarker turn={turn} indicator='o' running={running} />
+    <div className='my-row'>
+        <AnimateSharedLayout>
+          <TurnMarker turn={turn} indicator='o' running={running} />
+          <motion.div layout className="my-column">
             <Board dimensions={{ x: dimensions.x, y: dimensions.y }} board={board} active={showBoard} />
-            <TurnMarker turn={turn} indicator='x' running={running} />
-          </AnimateSharedLayout>
-        </Col>
-      </Row>
-    </Container >
+          </motion.div>
+          <TurnMarker turn={turn} indicator='x' running={running} />
+        </AnimateSharedLayout>
+    </div>
   );
 }
 
@@ -139,17 +136,19 @@ const TurnMarker = (props: { running: boolean, turn: marking, indicator: marking
   }
 
   return (
-    <motion.img
-      className='cell-mark'
-      key='svg image 2'
-      variants={markingVariants}
-      initial={'unmarked'}
-      animate={props.turn === props.indicator && props.running ? 'winningSquare' : 'marked'}
-      exit={'unmarked'}
-      src={`${props.indicator}.svg`}
-      alt={'x'}
-      layout
-    />
+    <motion.div layout className="my-column">
+      <motion.img
+        className='cell-mark'
+        key='svg image 2'
+        variants={markingVariants}
+        initial={'unmarked'}
+        animate={props.turn === props.indicator && props.running ? 'winningSquare' : 'marked'}
+        exit={'unmarked'}
+        src={`${props.indicator}.svg`}
+        alt={'x'}
+        layout
+      />
+    </motion.div>
   )
 }
 

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { marking } from '../types';
-import { Button } from 'react-bootstrap';
 import Cell from './Cell';
 import './tictactoe.scss'
 import { ReactElement } from 'react';
@@ -28,7 +27,7 @@ const DummyBoard = (props: BoardProps) => {
 
     let emptyBoard = Array<marking>(props.dimensions.x * props.dimensions.y);
     emptyBoard.fill('*');
-    dispatch({ type: 'tictactoe/boardUpdated', payload: emptyBoard });
+    dispatch({ type: 'tictactoe/boardUpdated', payload: { board: emptyBoard } });
   }, []);
 
   function onCellClick(x: number, y: number) {
@@ -40,7 +39,7 @@ const DummyBoard = (props: BoardProps) => {
     } else {
       newBoard[y * props.dimensions.x + x] = '*';
     }
-    dispatch({ type: 'tictactoe/boardUpdated', payload: newBoard });
+    dispatch({ type: 'tictactoe/boardUpdated', payload: { board: newBoard } });
   }
 
   function renderData(data: marking[]): ReactElement[] {
@@ -73,32 +72,32 @@ const DummyBoard = (props: BoardProps) => {
 
   return (
     <div className=''>
-      <Button onClick={() => {
+      <button onClick={() => {
         let emptyBoard = Array<marking>(props.dimensions.x * props.dimensions.y);
         emptyBoard.fill('x');
-        dispatch({ type: 'tictactoe/boardUpdated', payload: emptyBoard });
-      }}>Fill</Button>
-      <Button onClick={() => {
+        dispatch({ type: 'tictactoe/boardUpdated', payload: { board: emptyBoard } });
+      }}>Fill</button>
+      <button onClick={() => {
         let emptyBoard = Array<marking>(props.dimensions.x * props.dimensions.y);
         emptyBoard.fill('*');
-        dispatch({ type: 'tictactoe/boardUpdated', payload: emptyBoard });
-      }}>Clear</Button>
-      <Button onClick={() => {
+        dispatch({ type: 'tictactoe/boardUpdated', payload: { board: emptyBoard } });
+      }}>Clear</button>
+      <button onClick={() => {
         setActive(!active);
-      }}>Toggle Board</Button>
-      <Button onClick={() => {
+      }}>Toggle Board</button>
+      <button onClick={() => {
         setReordered(!reordered);
-      }}>Reorder</Button>
-      <Button onClick={() => {
+      }}>Reorder</button>
+      <button onClick={() => {
         setWinningSquareAnim(!winningSquareAnim);
-      }}>Winning Animation</Button>
-      <Button onClick={() => {
+      }}>Winning Animation</button>
+      <button onClick={() => {
         setWinningSquareAnim(!winningSquareAnim);
-      }}>Winning Animation</Button>
-      <Button onClick={() => {
+      }}>Winning Animation</button>
+      <button onClick={() => {
         setCellActive(!cellActive);
-      }}>Cell Active</Button>
-      <div className='d-flex flex-column align-items-center justify-content-center'>
+      }}>Cell Active</button>
+      <div className='column'>
         <div className='m-3 tictactoe-grid' style={{
           display: `grid`,
           gridTemplateColumns: `repeat(${props.dimensions.x}, 1fr)`

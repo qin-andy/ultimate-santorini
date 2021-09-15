@@ -17,6 +17,9 @@ $cell-mark-duration: 200ms;
   border-radius: 16px;
   position: relative;
   transition: background-color 100ms;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
   P {
     margin: 0;
