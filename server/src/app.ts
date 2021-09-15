@@ -2,7 +2,7 @@ import express from 'express';
 import http from 'http';
 import path from 'path';
 import { Server } from 'socket.io';
-import { GameManager } from './game/gameManager';
+import { GameManager } from './manager/gameManager';
 
 const app = express();
 const server = http.createServer(app);

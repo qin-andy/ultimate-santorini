@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
-import { GameManager } from "./gameManager";
-import { Player } from "./player";
+import { GameManager } from "../manager/gameManager";
+import { Player } from "../player/player";
 import { TicTacToeGame } from "./tictactoe";
 
 export class TicTacToeAutoGame extends TicTacToeGame {

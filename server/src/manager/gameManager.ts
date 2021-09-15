@@ -1,9 +1,9 @@
-import { Game } from "./game";
-import { Player } from "./player";
-import { TicTacToeGame } from './tictactoe';
+import { Game } from "../game/game";
+import { Player } from "../player/player";
+import { TicTacToeGame } from '../game/tictactoe';
 import { Server } from 'socket.io';
-import { GameResponse, ManagerEvent, ManagerResponse, ManagerHandler } from "../types/types";
-import { TicTacToeAutoGame } from "./tictactoeAuto";
+import { ManagerEvent, ManagerResponse, ManagerHandler } from "../types/types";
+import { TicTacToeAutoGame } from "../game/tictactoeAuto";
 import { nanoid } from "nanoid";
 
 const DISCONNECT_TIMEOUT = 300000; // 5 minutes

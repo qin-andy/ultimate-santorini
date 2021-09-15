@@ -1,9 +1,9 @@
 import { Server } from 'socket.io';
-import { PlayerManager } from "./playerManager";
+import { PlayerManager } from "../player/playerManager";
 import { nanoid } from "nanoid";
-import { Player } from "./player";
+import { Player } from "../player/player";
 import { GameEvent, GameResponse } from '../types/types';
-import { GameManager } from './gameManager';
+import { GameManager } from '../manager/gameManager';
 
 export class Game {
   io: Server;

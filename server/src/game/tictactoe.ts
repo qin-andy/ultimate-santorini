@@ -1,8 +1,8 @@
 import { Game } from "./game";
 import { Server } from 'socket.io';
 import { GameEvent, GameResponse } from "../types/types";
-import { GameManager } from "./gameManager";
-import { Player } from "./player";
+import { GameManager } from "../manager/gameManager";
+import { Player } from "../player/player";
 
 export class TicTacToeGame extends Game {
   turn: string;

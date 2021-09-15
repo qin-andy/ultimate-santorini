@@ -2,7 +2,7 @@
 import { Server, Socket as ServerSocket } from 'socket.io';
 import { Socket as ClientSocket } from 'socket.io-client';
 import { TicTacToeAutoGame } from '../src/game/tictactoeAuto';
-import { Player } from '../src/game/player';
+import { Player } from '../src/player/player';
 import { GameEvent, GameResponse } from '../src/types/types';
 import { createSocketPairs, createSocketServer } from './helpers';
 

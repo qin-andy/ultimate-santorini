@@ -1,6 +1,6 @@
 
 import { Game } from "../game/game";
-import { Player } from "../game/player";
+import { Player } from "../player/player";
 
 export interface GameEvent {
   type: string,
