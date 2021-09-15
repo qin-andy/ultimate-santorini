@@ -1,5 +1,4 @@
 import React from 'react';
-import { Col, Row, Container } from 'react-bootstrap';
 import DummyBoard from '../tictactoe/DummyBoard';
 const AnimationPage = () => {
   return (
