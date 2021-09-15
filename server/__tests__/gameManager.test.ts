@@ -45,15 +45,15 @@ describe('game manager tests', () => {
     return new Promise<void>(resolve => { setTimeout(resolve, delay) });
   }
 
-  let managerResponsePromiseFactory = async (clientSocket: ClientSocket) => { // helper function for game responses
-    let updatePromise = new Promise<ManagerResponse>((resolve) => {
-      clientSocket.once('manager response', (response: ManagerResponse) => {
+  let managerResponseFactory = async (clientSocket: ClientSocket) => { // helper function for game responses
+    let updatePromise = new Promise<ManagerResponse>((resolve, reject) => {
+      clientSocket.on('manager response', (response: ManagerResponse) => {
+        clientSocket.off('manager response');
         resolve(response);
       });
     });
     return updatePromise;
   }
-
 
   function createManagerEvent(id: string, type: string, payload?: any): ManagerEvent {
     let event: ManagerEvent = {
@@ -102,9 +102,17 @@ describe('game manager tests', () => {
       expect(players[1].socket).toBe(serverSockets[1]);
     });
 
-    it('ping listener attached correctly to socket', async () => {
+    it('ping handler works', async () => {
       [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
       let response = sendEvent(clientSockets[0].id, 'ping');
+      expect(response.payload).toBe('pong');
+    });
+
+    it('ping event handler listeners attached correctly to socket', async () => {
+      [clientSockets, serverSockets] = await createSocketPairs(io, port, 1);
+      let promise = managerResponseFactory(clientSockets[0]);
+      clientSockets[0].emit('manager action', 'ping');
+      let response = await promise;
       expect(response.payload).toBe('pong');
     });
 
@@ -443,8 +451,8 @@ describe('game manager tests', () => {
         [clientSockets, serverSockets] = await createSocketPairs(io, port, 2);
         gameManager.matchmakingQueue.push(clientSockets[0].id);
         gameManager.matchmakingQueue.push(clientSockets[1].id);
-        let promise1 = managerResponsePromiseFactory(clientSockets[0]);
-        let promise2 = managerResponsePromiseFactory(clientSockets[1]);
+        let promise1 = managerResponseFactory(clientSockets[0]);
+        let promise2 = managerResponseFactory(clientSockets[1]);
         gameManager.matchmakePlayersInQueue();
         let response1 = await promise1;
         let response2 = await promise2;

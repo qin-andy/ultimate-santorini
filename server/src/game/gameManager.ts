@@ -84,7 +84,7 @@ export class GameManager {
       return response;
     };
 
-    let joinQueueHandler: ManagerHandler = (event)=> {
+    let joinQueueHandler: ManagerHandler = (event) => {
       let response: ManagerResponse = {
         error: false,
         type: 'join queue',
@@ -288,24 +288,31 @@ export class GameManager {
     this.eventHandlerMap.set('player info', playerInfoHandler);
   }
 
-  attachListeners(io: Server, dev: boolean = false) {
+  attachListeners(io: Server) {
     io.on('connect', (socket) => {
       this.playersMap.set(socket.id, new Player(socket, nanoid()));
-      socket.on('manager action', (type: string, payload: any, acknowledger: Function) => {
-        let handler = this.eventHandlerMap.get(type);
-        if (handler) {
-          let event: ManagerEvent = {
-            type,
-            payload,
-            id: socket.id,
-            acknowledger
-          }
-          this.handleEvent(event);
+      socket.on('manager action', (type: string, payload: any, acknowledger = (response: any) => { }) => {
+        let event: ManagerEvent = {
+          type,
+          payload,
+          id: socket.id,
+          acknowledger: (response: any) => { }
         }
+        this.handleEvent(event);
+      });
+
+      let disconnectTimeout: NodeJS.Timeout;
+      socket.onAny(() => {
+        clearTimeout(disconnectTimeout);
+        disconnectTimeout = setTimeout(() => {
+          this.playersMap.get(socket.id)?.currentGame?.removePlayer(socket.id);
+          socket.disconnect();
+        }, DISCONNECT_TIMEOUT);
       });
 
       socket.on('disconnect', () => {
         // game removal handled in playerManagement class
+        clearTimeout(disconnectTimeout);
         let index = this.matchmakingQueue.indexOf(socket.id);
         if (index !== -1) {
           this.matchmakingQueue.splice(index, 1);
@@ -319,15 +326,6 @@ export class GameManager {
         }
         this.playersMap.delete(socket.id);
       });
-
-      let disconnectTimeout: NodeJS.Timeout;
-      socket.onAny(() => {
-        clearTimeout(disconnectTimeout);
-        disconnectTimeout = setTimeout(() => {
-          this.playersMap.get(socket.id)?.currentGame?.removePlayer(socket.id);
-          socket.disconnect();
-        }, DISCONNECT_TIMEOUT);
-      });
     });
   }
 
@@ -336,6 +334,7 @@ export class GameManager {
     if (handler) {
       let response = handler(event);
       this.io.to(event.id).emit('manager response', response);
+      event.acknowledger(response);
     }
   }
 
