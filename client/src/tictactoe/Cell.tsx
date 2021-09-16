@@ -70,10 +70,8 @@ const Cell = (props: CellProps) => {
       exit={'afterExit'}
       variants={cellVariants}
       onClick={() => props.onClick(props.x, props.y)}
-      onMouseEnter={() => setCellVariant('openHover')}
-      onMouseLeave={() => setCellVariant('open')}
-      onMouseDown={() => setCellVariant('mouseDown')}
-      onMouseUp={() => setCellVariant('openHover')}
+      whileHover={'openHover'}
+      whileTap={'mouseDown'}
       layout
     >
       <Marking

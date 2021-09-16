@@ -126,7 +126,7 @@ const TurnMarker = (props: { running: boolean, turn: marking, indicator: marking
     winningSquare: {
       rotate: 360,
       opacity: 1,
-      scale: 1,
+      scale: 1.5,
       transition: {
         duration: 1,
         type: 'spring',

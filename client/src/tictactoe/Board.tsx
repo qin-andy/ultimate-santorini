@@ -5,7 +5,7 @@ import './tictactoe.scss'
 import { ReactElement } from 'react';
 import { useAppSelector } from '../hooks/hooks';
 import { tictactoeMark } from '../services/socket';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface BoardProps {
   dimensions: { x: number, y: number }
@@ -57,14 +57,16 @@ const Board = (props: BoardProps) => {
   }
 
   return (
-    <div className='tictactoe-grid' style={{
-      display: `grid`,
-      gridTemplateColumns: `repeat(${props.dimensions.x}, 1fr)`
-    }}>
-      <AnimatePresence>
-        {props.active ? buildBoardCells(props.board) : null}
-      </AnimatePresence>
-    </div>
+    <motion.div layout className="my-column">
+      <div className='tictactoe-grid' style={{
+        display: `grid`,
+        gridTemplateColumns: `repeat(${props.dimensions.x}, 1fr)`
+      }}>
+        <AnimatePresence>
+          {props.active ? buildBoardCells(props.board) : null}
+        </AnimatePresence>
+      </div>
+    </motion.div>
   );
 }
 
