@@ -15,7 +15,7 @@ interface CellProps {
 
 const Cell = (props: CellProps) => {
   const [cellVariant, setCellVariant] = useState('initial');
-  let delay = (props.y * props.dimensions.x + props.x) * 0.04;
+  let delay = (props.y * props.dimensions.x + props.x) * 0.01;
 
   const cellVariants = {
     initial: {

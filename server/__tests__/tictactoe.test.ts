@@ -213,6 +213,20 @@ describe('tictactoe tests', () => {
         expect(game.checkWin(2, 1)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
         expect(game.checkWin(2, 2)).toStrictEqual(expect.arrayContaining(expectedWinningSquares));
       });
+
+      it.only('board win test 4, 5x5 board', () => {
+        game.dimensions = { x: 6, y: 6 };
+        game.settings.winSize = 5;
+        game.board = [
+          '*', 'x', '*', '*', '*', '*',
+          '*', '*', 'x', '*', '*', '*',
+          '*', '*', '*', 'x', '*', '*',
+          '*', '*', '*', '*', 'x', '*',
+          '*', '*', '*', '*', '*', 'x',
+          '*', '*', '*', '*', '*', '*'
+        ];
+        expect(game.checkWin(1, 0)).toBeTruthy();
+      });
     });
 
     describe('board marking', () => {

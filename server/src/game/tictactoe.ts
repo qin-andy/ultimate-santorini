@@ -2,7 +2,6 @@ import { Game } from "./game";
 import { Server } from 'socket.io';
 import { GameEvent, GameResponse } from "../types/types";
 import { GameManager } from "../manager/gameManager";
-import { Player } from "../player/player";
 
 export class TicTacToeGame extends Game {
   turn: string;
@@ -113,8 +112,7 @@ export class TicTacToeGame extends Game {
   }
 
   getBoardIndex(x: number, y: number): number {
-    let xSize = 3;
-    return x + y * xSize;
+    return x + y * this.dimensions.x;
   }
 
   mark(id: string, x: number, y: number): GameResponse {
@@ -266,12 +264,12 @@ export class TicTacToeGame extends Game {
     let topLeft: [number, number] = [x - distance, y - distance];
     // totl length of digaongal is distance ot top left + dist to bottom right + 1 (current)
     let diagonalLength = distance + Math.min(boardX - x, boardY - y) + 1;
-
     consecutives = 0;
     for (let i = 0; i < diagonalLength; i++) {
       let currX = topLeft[0] + i;
       let currY = topLeft[1] + i;
-      if (this.board[this.getBoardIndex(currY, currX)] === player) {
+      if (this.board[this.getBoardIndex(currX, currY)] === player) {
+
         consecutives++;
         if (consecutives === winSize) {
           for (let j = 0; j < consecutives; j++) {
@@ -295,7 +293,7 @@ export class TicTacToeGame extends Game {
     for (let i = 0; i < diagonalLength; i++) {
       let currX = topRight[0] - i;
       let currY = topRight[1] + i;
-      if (this.board[this.getBoardIndex(currY, currX)] === player) {
+      if (this.board[this.getBoardIndex(currX, currY)] === player) {
         consecutives++;
         if (consecutives === winSize) {
           for (let j = 0; j < consecutives; j++) {

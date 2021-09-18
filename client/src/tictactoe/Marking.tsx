@@ -30,6 +30,7 @@ const Marking = (props: MarkingProps) => {
       scale: 1,
       transition: {
         duration: 1.5,
+        repeat: 3,
         type: 'spring',
         bounce: 0.5
       }

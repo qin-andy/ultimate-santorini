@@ -1,5 +1,5 @@
-# [quicktactoe-live](https://quicktactoe.herokuapp.com/)
-A multiplayer matchmaking-based tictactoe web experience with minimal setup. **Enter matchmaking queue just by loading the page!**
+# [gomoku-live](https://gomoku-live.herokuapp.com/)
+A multiplayer matchmaking-based 5-in-a-row web experience with minimal setup. **Enter matchmaking queue just by loading the page!**
 
 Frontend web client written in **[React](https://reactjs.org/)**, **[Redux](https://redux.js.org/)**, and **[Framer Motion](https://www.framer.com/motion/)**. Backend game server written in **Node**, **[Express](https://expressjs.com/)**, and **[SocketIO](https://socket.io/)**, with comprehensive testing suite written in Jest
 

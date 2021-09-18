@@ -26,6 +26,7 @@ const Board = (props: BoardProps) => {
 
   function onCellClick(x: number, y: number) {
     tictactoeMark(x, y);
+    console.log(x, y);
   }
 
   let winningIndexes: number[] = [];

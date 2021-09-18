@@ -1,4 +1,4 @@
-$cell-size: 16vh;
+$cell-size: 8vh;
 $cell-enter-distance: 20vh;
 $cell-enter-duration: 500ms;
 $cell-mark-duration: 200ms;
@@ -11,7 +11,7 @@ $cell-mark-duration: 200ms;
 .tictactoe-cell {
   height: $cell-size;
   width: $cell-size;
-  border: 5px;
+  border: 3px;
   border-style: solid;
   border-color: black;
   border-radius: 16px;

@@ -50,7 +50,7 @@ export class TicTacToeAutoGame extends TicTacToeGame {
   }
 
   // Override, includes reset flag which will reset game
-  end(reset = false, delay = 3000) {
+  end(reset = false, delay = 8000) {
     this.running = false;
     if (reset) {
       this.resetTimeout = setTimeout(() => {

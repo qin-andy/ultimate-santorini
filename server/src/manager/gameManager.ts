@@ -7,7 +7,7 @@ import { TicTacToeAutoGame } from "../game/tictactoeAuto";
 import { nanoid } from "nanoid";
 
 const DISCONNECT_TIMEOUT = 300000; // 5 minutes
-const QUEUE_TICTACTOE_SETTINGS = { x: 3, y: 3, winSize: 3 };
+const QUEUE_TICTACTOE_SETTINGS = { x: 9, y: 9, winSize: 5 };
 
 export class GameManager {
   gamesMap: Map<string, Game>;

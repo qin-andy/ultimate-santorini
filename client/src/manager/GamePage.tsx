@@ -88,7 +88,7 @@ const GamePage = () => {
     if (running) {
       setShowBoard(true);
     } else if (!running) {
-      timeout = setTimeout(() => setShowBoard(false), 1500);
+      timeout = setTimeout(() => setShowBoard(false), 5000);
     }
     return () => clearTimeout(timeout);
   }, [running]);
