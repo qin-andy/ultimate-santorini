@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import { GameResponse, marking } from "../types";
 
 interface TictactoeState {
+  inGame: boolean,
   playerName: string,
   id: string,
   running: boolean,
@@ -17,6 +18,7 @@ interface TictactoeState {
 }
 
 const initialState: TictactoeState = {
+  inGame: false,
   playerName: '',
   id: '',
   running: false,
@@ -43,6 +45,7 @@ const tictactoeSlice = createSlice({
       state.id = action.payload.id;
     },
     gameStarted(state, action) {
+      state.inGame = true;
       state.dimensions.x = action.payload.x;
       state.dimensions.y = action.payload.y;
       state.board = action.payload.board;
@@ -69,6 +72,7 @@ const tictactoeSlice = createSlice({
       state.running = false;
     },
     opponentDisconnect(state, action) {
+      state.inGame = false;
       state.completed = true;
       state.running = false;
     }

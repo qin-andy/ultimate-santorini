@@ -4,7 +4,7 @@ import socket, { getPlayerInfo, joinQueue, leaveGame } from '../services/socket'
 import Board from '../tictactoe/Board';
 import { useAppDispatch, useAppSelector } from '../hooks/hooks';
 import { GameResponse, ManagerResponse, marking } from '../types';
-import { motion, AnimateSharedLayout } from 'framer-motion';
+import { motion, AnimateSharedLayout, AnimatePresence } from 'framer-motion';
 
 const GamePage = () => {
   const dispatch = useAppDispatch();
@@ -95,15 +95,79 @@ const GamePage = () => {
 
   return (
     <div className='my-row'>
-        <AnimateSharedLayout>
-          <TurnMarker turn={turn} indicator='o' running={running} />
-          <motion.div layout className="my-column">
-            <Board dimensions={{ x: dimensions.x, y: dimensions.y }} board={board} active={showBoard} />
-          </motion.div>
-          <TurnMarker turn={turn} indicator='x' running={running} />
-        </AnimateSharedLayout>
+      <AnimateSharedLayout>
+        <TurnMarker turn={turn} indicator='o' running={running} />
+        <motion.div layout className="my-column">
+          <AnimatedLoadingDisplay text={'SEARCHING'} />
+          <Board dimensions={{ x: dimensions.x, y: dimensions.y }} board={board} active={showBoard} />
+        </motion.div>
+        <TurnMarker turn={turn} indicator='x' running={running} />
+      </AnimateSharedLayout>
     </div>
   );
+}
+
+const AnimatedLoadingDisplay = (props: { text: string }) => {
+  const [showLoading, setShowLoading] = useState(true);
+  const inGame = useAppSelector(state => state.tictactoe.inGame);
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (!inGame) {
+      timeout = setTimeout(() => setShowLoading(true), 1500);
+    } else if (inGame) {
+      setShowLoading(false);
+    }
+    return () => clearTimeout(timeout);
+  }, [inGame]);
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05,
+      }
+    }
+  }
+  const chars = {
+    hidden: { opacity: 0.2 },
+    show: {
+      opacity: 1,
+      transition: {
+        repeat: Infinity,
+        repeatType: 'reverse' as 'reverse',
+        duration: 1
+      }
+    }
+  }
+
+  const textArray = props.text.split('');
+  const components = textArray.map((char: string, index: number) => {
+    return (
+
+      <motion.span
+        key={index}
+        variants={chars}
+        className='loading-display'
+      >
+        {char}
+      </motion.span>
+    )
+  });
+  return (
+    <AnimatePresence>
+      {showLoading ? <motion.h1
+        initial={'hidden'}
+        animate={'show'}
+        variants={container}
+        exit={'hidden'}
+        layout
+      >
+        {components}
+      </motion.h1> : null}
+    </AnimatePresence>
+  )
 }
 
 const TurnMarker = (props: { running: boolean, turn: marking, indicator: marking }) => {

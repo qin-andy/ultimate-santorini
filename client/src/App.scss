@@ -1,4 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+
+.loading-display {
+  font-family: 'Roboto', sans-serif;
+}
+
 .my-row {
+  text-align: center;
   height: 100vh;
   display: flex;
   flex-wrap: nowrap;
