@@ -5,9 +5,9 @@ import { Server } from 'socket.io';
 import { ManagerEvent, ManagerResponse, ManagerHandler } from "../types/types";
 import { TicTacToeAutoGame } from "../game/tictactoeAuto";
 import { nanoid } from "nanoid";
+import { SantoriniAdapter } from "../game/santoriniAdapater";
 
 const DISCONNECT_TIMEOUT = 300000; // 5 minutes
-const QUEUE_TICTACTOE_SETTINGS = { x: 9, y: 9, winSize: 5 };
 
 export class GameManager {
   gamesMap: Map<string, Game>;
@@ -55,7 +55,7 @@ export class GameManager {
 
       // Mokugo variant:
       // let newGame = new TicTacToeAutoGame(player1id + player2id, this.io, this, {x: 9, y: 9, winSize: 5});
-      let newGame = new TicTacToeAutoGame(player1id + player2id, this.io, this, QUEUE_TICTACTOE_SETTINGS);
+      let newGame = new SantoriniAdapter('santorini', this.io, this);
       newGame.addPlayer(player1);
       newGame.addPlayer(player2);
       this.gamesMap.set(newGame.name, newGame);

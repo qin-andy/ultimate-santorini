@@ -11,7 +11,6 @@ export const leaveGame = () => {
 }
 
 export const createGame = (name: string) => {
-
   let payload = { name, type: 'tictactoe', autoplay: true }
   socket.emit('manager action', 'create game', payload);
 }
@@ -30,6 +29,18 @@ export const tictactoeStart = () => {
 
 export const tictactoeMark = (x: number, y: number) => {
   socket.emit('game action', 'tictactoe mark', { x, y });
+}
+
+export const santoriniStart = () => {
+  socket.emit('game action', 'santorini start');
+}
+
+export const santoriniPlace = (payload: any) => {
+  socket.emit('game action', 'santorini place', payload);
+}
+
+export const santoriniMove = (payload: any) => {
+  socket.emit('game action', 'santorini move', payload);
 }
 
 export default socket;

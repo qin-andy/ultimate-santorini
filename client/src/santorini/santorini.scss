@@ -1,0 +1,45 @@
+$cell-size: 8vh;
+$cell-enter-distance: 20vh;
+$cell-enter-duration: 500ms;
+$cell-mark-duration: 200ms;
+
+.santorini-cell {
+  height: $cell-size;
+  width: $cell-size;
+  border: 6px;
+  border-style: solid;
+  border-color: black;
+  border-radius: 16px;
+  position: relative;
+  transition: background-color 100ms;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  p {
+    margin: 0;
+    font-size: 30px;
+  }
+
+  &:hover {
+    background-color: rgb(164, 173, 189);
+    cursor: pointer;
+  }
+}
+
+.move-highlighted {
+  background-color: rgb(180, 180, 180);
+}
+
+.build-highlighted {
+  background-color: rgb(107, 107, 107);
+}
+
+.red {
+  background-color: red;
+}
+
+.blue {
+  background-color: blue;
+}

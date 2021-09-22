@@ -49,6 +49,7 @@ export class Game {
     // default handles all existing events
     let handler = this.eventHandlerMap.get(event.type)
     if (handler) handler(event);
+    
   }
 
   addPlayer(player: Player) {

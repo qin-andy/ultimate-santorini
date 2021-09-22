@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Switch } from 'react-router-dom';
 import AnimationPage from './manager/AnimationPage';
 import GamePage from './manager/GamePage';
 import './App.scss';
+import SantoriniPage from './santorini/SantoriniPage';
 
 
 const App = () => {
@@ -13,7 +14,7 @@ const App = () => {
           <AnimationPage />
         </Route>
         <Route path="/">
-          <GamePage />
+          <SantoriniPage />
         </Route>
       </Switch>
     </BrowserRouter>

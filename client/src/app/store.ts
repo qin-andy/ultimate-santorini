@@ -1,6 +1,7 @@
 import { compose, configureStore } from '@reduxjs/toolkit'
 import tictactoeSlice from '../tictactoe/tictactoeSlice';
 import managerSlice from '../manager/managerSlice';
+import santoriniSlice from '../santorini/santoriniSlice';
 
 const composeEnhancers = (window as any).__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 
@@ -8,7 +9,8 @@ const composeEnhancers = (window as any).__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ ||
 const store = configureStore({
   reducer: {
     tictactoe: tictactoeSlice,
-    manager: managerSlice
+    manager: managerSlice,
+    santorini: santoriniSlice
   },
   enhancers: composeEnhancers
 });
