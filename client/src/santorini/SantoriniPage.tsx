@@ -4,6 +4,7 @@ import socket, { getPlayerInfo, joinQueue, santoriniMove, santoriniPlace, santor
 import { useAppDispatch, useAppSelector } from '../hooks/hooks';
 import { GameResponse, ManagerResponse, marking } from '../types';
 import './santorini.scss';
+import { AnimateSharedLayout, motion } from 'framer-motion';
 
 type Coord = { x: number, y: number };
 
@@ -11,6 +12,7 @@ interface SquareData {
   index: number,
   coord: Coord,
   worker: '' | 'red' | 'blue',
+  workerId: number,
   elevation: number,
   moveHighlighted: boolean,
   buildHighlighted: boolean
@@ -18,7 +20,6 @@ interface SquareData {
 
 const SantoriniPage = () => {
   const dispatch = useAppDispatch();
-
   useEffect(() => {
     let timeouts: NodeJS.Timeout[] = [];
     socket.on('manager response', (response: ManagerResponse) => {
@@ -54,7 +55,7 @@ const SantoriniPage = () => {
     });
 
     getPlayerInfo();
-    timeouts.push(setTimeout(() => joinQueue(), 1000));
+    timeouts.push(setTimeout(() => joinQueue(), 0));
     return () => {
       socket.off('game update')
       socket.off('manager response')
@@ -77,22 +78,12 @@ const SantoriniBoard = (props: {}) => {
   const [selectedMove, setSelectedMove] = useState(-1);
   const [highlightMoves, setHighlightMoves] = useState(false);
   const [highlightBuilds, setHighlightBuilds] = useState(false);
+  const [boardData, setBoardData] = useState<SquareData[]>([]);
 
+  const elevations = useAppSelector(state => state.santorini.board);
+  const phase = useAppSelector(state => state.santorini.phase);
+  const workers = useAppSelector(state => state.santorini.workers);
   const turn = useAppSelector(state => state.santorini.turn);
-
-  useEffect(() => {
-    socket.on('game update', (response: GameResponse) => {
-      if (response.type === 'santorini move') {
-        setHighlightBuilds(false)
-        setHighlightMoves(false);
-        setSelectedMove(-1);
-        setSelectedWorker(-1);
-      }
-    });
-    return () => {
-      socket.off('game update')
-    };
-  }, []);
 
   function indexToCoord(index: number): Coord {
     return { x: index % 5, y: Math.floor(index / 5) }
@@ -108,75 +99,102 @@ const SantoriniBoard = (props: {}) => {
     console.log(payload);
   }
 
-  const elevations = useAppSelector(state => state.santorini.board);
-  const phase = useAppSelector(state => state.santorini.phase);
-  const workers = useAppSelector(state => state.santorini.workers);
-
   // Build board data
-  let boardData: SquareData[] = [];
-  for (let i = 0; i < 25; i++) {
-    let squareData: SquareData = {
-      index: i,
-      coord: { x: i % 5, y: Math.floor(i / 5) },
-      worker: '',
-      elevation: 0,
-      moveHighlighted: false,
-      buildHighlighted: false
-    }
-    boardData.push(squareData)
-  }
+  function generateBoardData() {
+    let boardData: SquareData[] = [];
 
-  // populate elevation
-  elevations.forEach((level, index) => {
-    boardData[index].elevation = level;
-  });
-
-  // populate workers
-  const workerIndexes = workers.map(coord => {
-    return coord.x + coord.y * 5;
-  });
-  workerIndexes.forEach((i, index) => {
-    if (i >= 0) {
-      if (index <= 1) boardData[i].worker = 'red'
-      else boardData[i].worker = 'blue'
-    }
-  });
-
-  function getAdjIndexes(index: number): number[] {
-    let coord = { x: index % 5, y: Math.floor(index / 5) }
-    let adjacentIndexes: number[] = [];
-    for (let i = -1; i < 2; i++) {
-      for (let j = -1; j < 2; j++) {
-        let x = coord.x + i;
-        let y = coord.y + j;
-        if (x >= 0 && x <= 4
-          && y >= 0 && y <= 4
-          && (x + y * 5 !== index)) {
-          adjacentIndexes.push(x + y * 5);
+    function getAdjIndexes(index: number): number[] {
+      let coord = { x: index % 5, y: Math.floor(index / 5) }
+      let adjacentIndexes: number[] = [];
+      for (let i = -1; i < 2; i++) {
+        for (let j = -1; j < 2; j++) {
+          let x = coord.x + i;
+          let y = coord.y + j;
+          if (x >= 0 && x <= 4
+            && y >= 0 && y <= 4
+            && (x + y * 5 !== index)) {
+            adjacentIndexes.push(x + y * 5);
+          }
         }
       }
+      return adjacentIndexes;
     }
-    return adjacentIndexes;
-  }
 
-  // highlight square around selected worker
-  if (selectedWorker >= 0 && highlightMoves) {
-    let adjacentIndexes = getAdjIndexes(selectedWorker);
-    adjacentIndexes.forEach(index => {
-      if (boardData[index].elevation - boardData[selectedWorker].elevation <= 1) {
-        boardData[index].moveHighlighted = true;
+
+    for (let i = 0; i < 25; i++) {
+      let squareData: SquareData = {
+        index: i,
+        coord: { x: i % 5, y: Math.floor(i / 5) },
+        worker: '',
+        workerId: -1,
+        elevation: 0,
+        moveHighlighted: false,
+        buildHighlighted: false
+      }
+      boardData.push(squareData)
+    }
+
+    // populate elevation
+    elevations.forEach((level, index) => {
+      boardData[index].elevation = level;
+    });
+
+    // populate workers
+    const workerIndexes = workers.map(coord => {
+      return coord.x + coord.y * 5;
+    });
+    workerIndexes.forEach((i, index) => {
+      if (i >= 0) {
+        if (index <= 1) {
+          boardData[i].worker = 'red'
+        }
+        else {
+          boardData[i].worker = 'blue'
+        }
+        boardData[i].workerId = index;
       }
     });
+
+    // highlight square around selected worker
+    if (selectedWorker >= 0 && highlightMoves) {
+      let adjacentIndexes = getAdjIndexes(selectedWorker);
+      adjacentIndexes.forEach(index => {
+        if (boardData[index].elevation - boardData[selectedWorker].elevation <= 1
+          && boardData[index].worker === '') {
+          boardData[index].moveHighlighted = true;
+        }
+      });
+    }
+    // highlight biulds
+    if (selectedMove >= 0 && highlightBuilds) {
+      boardData[selectedWorker].worker = '';
+      let workerId = boardData[selectedWorker].workerId;
+      boardData[selectedWorker].workerId = -1;
+      boardData[selectedMove].worker = turn;
+      boardData[selectedMove].workerId = workerId;
+      let adjacentIndexes = getAdjIndexes(selectedMove);
+      adjacentIndexes.forEach(index => {
+        if (boardData[index].worker === '' && boardData[index].elevation <= 3)
+          boardData[index].buildHighlighted = true;
+      });
+    }
+    return boardData;
   }
-  // highlight biulds 
-  if (selectedMove >= 0 && highlightBuilds) {
-    boardData[selectedWorker].worker = '';
-    boardData[selectedMove].worker = turn;
-    let adjacentIndexes = getAdjIndexes(selectedMove);
-    adjacentIndexes.forEach(index => {
-      boardData[index].buildHighlighted = true;
-    });
+
+  function updateBoardData() {
+    setBoardData(generateBoardData());
   }
+
+  useEffect(() => {
+    updateBoardData();
+  }, [elevations, phase, workers, turn, selectedWorker, selectedMove, highlightBuilds, highlightMoves]);
+
+  useEffect(() => {
+    setHighlightMoves(false);
+    setHighlightBuilds(false);
+    setSelectedMove(-1);
+    setSelectedWorker(-1);
+  }, [workers])
 
   let boardSquares = boardData.map(squareData => {
     return (
@@ -185,6 +203,7 @@ const SantoriniBoard = (props: {}) => {
         index={squareData.index}
         elevation={squareData.elevation}
         worker={squareData.worker}
+        workerId={squareData.workerId}
         phase={phase}
         moveHighlighted={squareData.moveHighlighted}
         buildHighlighted={squareData.buildHighlighted}
@@ -195,17 +214,20 @@ const SantoriniBoard = (props: {}) => {
         setHighlightBuilds={setHighlightBuilds}
         setHighlightMoves={setHighlightMoves}
         sendAction={sendAction}
+        updateBoardData={updateBoardData}
       />
     )
   });
 
   return (
-    <div className='santorini-grid' style={{
-      display: `grid`,
-      gridTemplateColumns: `repeat(5, 1fr)`
-    }}>
-      {boardSquares}
-    </div>
+    <AnimateSharedLayout>
+      <div className='santorini-grid' style={{
+        display: `grid`,
+        gridTemplateColumns: `repeat(5, 1fr)`
+      }}>
+        {boardSquares}
+      </div>
+    </AnimateSharedLayout>
   )
 }
 
@@ -213,6 +235,7 @@ const SantoriniSquare = (props: {
   index: number,
   elevation: number,
   worker: string,
+  workerId: number,
   phase: string,
   moveHighlighted: boolean,
   buildHighlighted: boolean,
@@ -222,9 +245,9 @@ const SantoriniSquare = (props: {
   setHighlightMoves: Function,
   sendAction: Function,
   highlightBuilds: boolean,
-  highlightMoves: boolean
+  highlightMoves: boolean,
+  updateBoardData: Function,
 }) => {
-
   // TODO : raise props
   const turn = useAppSelector(state => state.santorini.turn);
   const player = useAppSelector(state => state.santorini.player);
@@ -253,7 +276,6 @@ const SantoriniSquare = (props: {
             props.setSelectedMove(props.index);
           } else if (props.buildHighlighted && !props.worker) {
             console.log('action dispatched');
-            props.setHighlightMoves(false);
             props.sendAction(props.index);
           } else {
             console.log('all deselected');
@@ -267,26 +289,106 @@ const SantoriniSquare = (props: {
     }
   }
 
-  let moveHighlighted = (props.moveHighlighted ? ' move-highlighted' : '');
-  let buildHighlighted = (props.buildHighlighted ? ' build-highlighted' : '');
+  let cellVariants = {
+    default: {
+      backgroundColor: '#FFFFFF',
+      scale: 0.9,
+      transition: {
+        duration: 0.1
+      }
+    },
+    hover: {
+      scale: 1,
+      transition: {
+        duration: 0.1
+      }
+    },
+    moveHighlighted: {
+      backgroundColor: '#DDDDDD',
+      scale: 0.9,
+      transition: {
+        duration: 0.1
+      }
+    },
+    buildHighlighted: {
+      backgroundColor: '#CCCCCC',
+      scale: 0.9,
+      transition: {
+        duration: 0.1
+      }
+    },
+  }
 
   return (
-    <div
-      className={'santorini-cell ' + moveHighlighted + buildHighlighted}
+    <motion.div
+      className={'santorini-cell'}
+      variants={cellVariants}
+      whileHover={'hover'}
+      animate={props.moveHighlighted ? 'moveHighlighted' : props.buildHighlighted ? 'buildHighlighted' : 'default'}
       onClick={onclick}
+      style={props.worker ? { zIndex: 3 } : {}}
     >
-      <Building elevation={props.elevation} worker={props.worker} />
-    </div>
+      <Building elevation={props.elevation}
+        worker={props.worker}
+        workerId={props.workerId}
+        phase={props.phase}
+        turn={turn}
+      />
+    </motion.div>
   )
 }
 
-const Building = (props: {elevation: number, worker: string}) => {
+const Building = (props: { elevation: number, worker: string, workerId: number, phase: string, turn: string }) => {
+  let buildingVariants = {
+    initial: {
+      scale: 0
+    },
+    default: {
+      scale: 1,
+      transition: {
+        type: 'spring',
+        bounce: 0.5,
+        duration: 0.75
+      }
+    }
+  }
+
   let child = <div></div>;
-  if (props.worker) child = <div className={'worker-' + props.worker} />
-  if (props.elevation >= 4) child = <div className='elevation-4'>{child}</div>
-  if (props.elevation >= 3) child = <div className='elevation-3'>{child}</div>
-  if (props.elevation >= 2) child = <div className='elevation-2'>{child}</div>
-  if (props.elevation >= 1) child = <div className='elevation-1'>{child}</div>
+  if (props.worker) child = <motion.div
+    variants={buildingVariants}
+    initial={props.phase === 'placement' ? 'initial' : 'default'} // animation should trigger after phase change
+    animate={'default'}
+    layoutId={'worker-' + props.workerId}
+    className={'worker-' + props.worker}
+  />
+  if (props.elevation >= 4) child = <motion.div
+    variants={buildingVariants}
+    initial='initial'
+    animate='default'
+    className='elevation-4'>
+    {child}
+  </motion.div>
+  if (props.elevation >= 3) child = <motion.div
+    variants={buildingVariants}
+    initial='initial'
+    animate='default'
+    className='elevation-3'>
+    {child}
+  </motion.div>
+  if (props.elevation >= 2) child = <motion.div
+    variants={buildingVariants}
+    initial='initial'
+    animate='default'
+    className='elevation-2'>
+    {child}
+  </motion.div>
+  if (props.elevation >= 1) child = <motion.div
+    variants={buildingVariants}
+    initial='initial'
+    animate='default'
+    className='elevation-1'>
+    {child}
+  </motion.div>
   return child;
 }
 

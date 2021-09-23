@@ -5,20 +5,21 @@ $cell-mark-duration: 200ms;
 
 $worker-size: 5vh;
 
-
 .santorini-cell {
   height: $cell-size;
   width: $cell-size;
   border: 3px;
   border-style: solid;
-  border-color: #EEEEEE;
+  border-color: #BBBBBB;
   border-radius: 0px;
+  background-color: #FFFFFF;
   position: relative;
   transition: background-color 100ms;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  z-index: 1;
 
   p {
     margin: 0;
@@ -26,7 +27,6 @@ $worker-size: 5vh;
   }
 
   &:hover {
-    background-color: rgb(164, 173, 189);
     cursor: pointer;
   }
 }
@@ -52,6 +52,8 @@ $elevation-base-size: $cell-size;
   align-items: center;
   height: $elevation-base-size - $elevation-size-offset * $elevation;
   width: $elevation-base-size - $elevation-size-offset * $elevation;
+  position: relative;
+  z-index: 2;
 
 }
 
@@ -77,10 +79,12 @@ $elevation-base-size: $cell-size;
 
 .worker {
   &-red {
+    position: relative;
     @include building-style(3);
     background-color: rgb(255, 97, 97);
   }
   &-blue {
+    position: relative;
     @include building-style(3);
     background-color: rgb(144, 144, 255);
   }
