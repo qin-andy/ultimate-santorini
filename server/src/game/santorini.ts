@@ -146,14 +146,16 @@ export class SantoriniGame {
     }
 
     // cannot move or build on spaces with workers
-    let occupiedIndecies = new Set();
-    this.getWorkerCoords().forEach(worker => {
-      occupiedIndecies.add(this.getIndex(worker));
-    });
-    if (occupiedIndecies.has(this.getIndex(moveCoord)) || occupiedIndecies.has(this.getIndex(buildCoord))) {
-      response.error = true;
-      response.message = 'space is already occupied'
-      return response;
+    if (!this.coordsAreEqual(buildCoord, workerCoord)) { // can buildon the original coord space
+      let occupiedIndecies = new Set();
+      this.getWorkerCoords().forEach(worker => {
+        occupiedIndecies.add(this.getIndex(worker));
+      });
+      if (occupiedIndecies.has(this.getIndex(moveCoord)) || occupiedIndecies.has(this.getIndex(buildCoord))) {
+        response.error = true;
+        response.message = 'space is already occupied'
+        return response;
+      }
     }
 
     // cannot move to spaces more than 1 above

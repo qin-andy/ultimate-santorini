@@ -49,7 +49,11 @@ export class SantoriniAdapter extends Game {
       payload: {
         turn: this.game.turn,
         workers: this.game.getWorkerCoords(),
-        board: this.game.board
+        board: this.game.board,
+        players: {
+          red: players[0],
+          blue: players[1]
+        }
       },
       type: 'start success',
       message: 'santorini started!'

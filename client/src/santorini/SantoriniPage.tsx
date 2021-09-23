@@ -41,7 +41,9 @@ const SantoriniPage = () => {
       dispatch({ type: 'tictactoe/gameResponseReceived', payload: response });
       if (response.type === 'start success') {
         console.log('start receieved, dispatching action');
-        dispatch({ type: 'santorini/santoriniStarted', payload: response.payload });
+        let payload = { ...response.payload, playerColor: response.payload.players.red === socket.id ? 'red' : 'blue' };
+        console.log(payload);
+        dispatch({ type: 'santorini/santoriniStarted', payload: payload });
       } else if (response.type === 'placement update') {
         console.log('placement recieved');
         dispatch({ type: 'santorini/santoriniWorkerPlaced', payload: response.payload });
@@ -75,6 +77,8 @@ const SantoriniBoard = (props: {}) => {
   const [selectedMove, setSelectedMove] = useState(-1);
   const [highlightMoves, setHighlightMoves] = useState(false);
   const [highlightBuilds, setHighlightBuilds] = useState(false);
+
+  const turn = useAppSelector(state => state.santorini.turn);
 
   useEffect(() => {
     socket.on('game update', (response: GameResponse) => {
@@ -159,10 +163,15 @@ const SantoriniBoard = (props: {}) => {
   if (selectedWorker >= 0 && highlightMoves) {
     let adjacentIndexes = getAdjIndexes(selectedWorker);
     adjacentIndexes.forEach(index => {
-      boardData[index].moveHighlighted = true;
+      if (boardData[index].elevation - boardData[selectedWorker].elevation <= 1) {
+        boardData[index].moveHighlighted = true;
+      }
     });
   }
+  // highlight biulds 
   if (selectedMove >= 0 && highlightBuilds) {
+    boardData[selectedWorker].worker = '';
+    boardData[selectedMove].worker = turn;
     let adjacentIndexes = getAdjIndexes(selectedMove);
     adjacentIndexes.forEach(index => {
       boardData[index].buildHighlighted = true;
@@ -179,6 +188,8 @@ const SantoriniBoard = (props: {}) => {
         phase={phase}
         moveHighlighted={squareData.moveHighlighted}
         buildHighlighted={squareData.buildHighlighted}
+        highlightBuilds={highlightBuilds}
+        highlightMoves={highlightMoves}
         setSelectedWorker={setSelectedWorker}
         setSelectedMove={setSelectedMove}
         setHighlightBuilds={setHighlightBuilds}
@@ -209,36 +220,49 @@ const SantoriniSquare = (props: {
   setSelectedMove: Function,
   setHighlightBuilds: Function,
   setHighlightMoves: Function,
-  sendAction: Function
+  sendAction: Function,
+  highlightBuilds: boolean,
+  highlightMoves: boolean
 }) => {
+
+  // TODO : raise props
+  const turn = useAppSelector(state => state.santorini.turn);
+  const player = useAppSelector(state => state.santorini.player);
+  const isPlayerTurn = turn === player;
   function indexToCoord(index: number): Coord {
     return { x: index % 5, y: Math.floor(index / 5) }
   }
+
   function onclick() {
-    console.log(indexToCoord(props.index));
     switch (props.phase) {
       case 'placement':
         console.log('sending placement request');
         santoriniPlace({ coord: indexToCoord(props.index) });
         break;
       case 'build':
-        if (props.worker) {
-          props.setHighlightMoves(true);
-          props.setHighlightBuilds(false);
-          props.setSelectedWorker(props.index);
-        }
-        else if (props.moveHighlighted && !props.worker) {
-          props.setHighlightMoves(false);
-          props.setHighlightBuilds(true);
-          props.setSelectedMove(props.index);
-        } else if (props.buildHighlighted && !props.worker) {
-          props.setHighlightMoves(false);
-          props.sendAction(props.index);
-        } else {
-          props.setHighlightMoves(false);
-          props.setHighlightBuilds(true);
-          props.setSelectedMove(-1);
-          props.setSelectedWorker(-1);
+        if (isPlayerTurn) {
+          if (props.worker === player && !props.highlightMoves && !props.highlightBuilds) {
+            console.log('worker selected, showing moves');
+            props.setHighlightMoves(true);
+            props.setHighlightBuilds(false);
+            props.setSelectedWorker(props.index);
+          } else if (props.moveHighlighted && !props.worker) {
+            console.log('move selected, showing builds');
+            props.setHighlightMoves(false);
+            props.setHighlightBuilds(true);
+            props.setSelectedMove(props.index);
+          } else if (props.buildHighlighted && !props.worker) {
+            console.log('action dispatched');
+            props.setHighlightMoves(false);
+            props.sendAction(props.index);
+          } else {
+            console.log('all deselected');
+
+            props.setHighlightMoves(false);
+            props.setHighlightBuilds(false);
+            props.setSelectedMove(-1);
+            props.setSelectedWorker(-1);
+          }
         }
         break;
     }

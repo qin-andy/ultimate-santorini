@@ -4,6 +4,7 @@ import { GameResponse } from "../types";
 type Coord = { x: number, y: number };
 
 interface SantoriniSlice {
+  player: 'red' | 'blue' | '',
   board: number[],
   workers: Coord[]
   turn: 'red' | 'blue',
@@ -11,6 +12,7 @@ interface SantoriniSlice {
 }
 
 const initialState: SantoriniSlice = {
+  player: '',
   board: [0],
   workers: [],
   turn: 'red',
@@ -25,17 +27,19 @@ const santoriniSlice = createSlice({
       state.phase = 'placement';
       state.board = action.payload.board;
       state.workers = action.payload.workers;
+      state.turn = 'red';
+      state.player = action.payload.playerColor;
     },
     santoriniWorkerPlaced(state, action) {
       state.board = action.payload.board;
       state.workers = action.payload.workers;
-      state.turn = action.payload.turns;
+      state.turn = action.payload.turn;
       if (action.payload.done) state.phase = 'build';
     },
     santoriniMoved(state, action) {
       state.board = action.payload.board;
       state.workers = action.payload.workers;
-      state.turn = action.payload.turns;
+      state.turn = action.payload.turn;
     }
   }
 });
