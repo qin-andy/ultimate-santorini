@@ -61,9 +61,6 @@ const SantoriniPage = () => {
 
   return (
     <div className='my-row'>
-      <button onClick={santoriniStart}>
-        Start
-      </button>
       <SantoriniBoard />
     </div>
   );
@@ -242,7 +239,7 @@ const SantoriniBoard = (props: {}) => {
         display: `grid`,
         gridTemplateColumns: `repeat(5, 1fr)`
       }}>
-        {boardSquares}
+        {phase === 'pregame' ? null : boardSquares}
       </div>
     </AnimateSharedLayout>
   )
@@ -268,6 +265,7 @@ const SantoriniSquare = (props: {
 }) => {
   // TODO : raise props
   const turn = useAppSelector(state => state.santorini.turn);
+  const [variant, setVariant] = useState('initial');
   const player = useAppSelector(state => state.santorini.player);
   const isPlayerTurn = turn === player;
   function indexToCoord(index: number): Coord {
@@ -307,8 +305,24 @@ const SantoriniSquare = (props: {
     }
   }
 
+  let delay = props.index * 0.05;
   let cellVariants = {
+    beforeEnter: {
+      opacity: 0, x: 0, y: 100,
+      scale: 0.9,
+    },
+    initial: {
+      opacity: 1, x: 0, y: 0,
+      scale: 0.9,
+      transition: {
+        type: 'spring',
+        bounce: 0.25,
+        duration: 1,
+        delay: delay
+      }
+    },
     default: {
+      x: 0, y: 0, opacity: 1,
       backgroundColor: '#FFFFFF',
       scale: 0.9,
       transition: {
@@ -316,18 +330,21 @@ const SantoriniSquare = (props: {
       }
     },
     hover: {
+      x: 0, y: 0, opacity: 1,
       scale: 1,
       transition: {
         duration: 0.1
       }
     },
     popIn: {
+      x: 0, y: 0, opacity: 1,
       scale: 0.87,
       transition: {
         duration: 0.1
       }
     },
     moveHighlighted: {
+      x: 0, y: 0, opacity: 1,
       backgroundColor: '#DDDDDD',
       scale: 0.9,
       transition: {
@@ -335,6 +352,7 @@ const SantoriniSquare = (props: {
       }
     },
     buildHighlighted: {
+      x: 0, y: 0, opacity: 1,
       backgroundColor: '#CCCCCC',
       scale: 0.9,
       transition: {
@@ -348,10 +366,12 @@ const SantoriniSquare = (props: {
     <motion.div
       className={'santorini-cell'}
       variants={cellVariants}
+      animate={props.moveHighlighted ? 'moveHighlighted' : props.buildHighlighted ? 'buildHighlighted' : variant}
+      initial='beforeEnter'
       whileHover={'hover'}
       whileTap={'popIn'}
-      animate={props.moveHighlighted ? 'moveHighlighted' : props.buildHighlighted ? 'buildHighlighted' : 'default'}
       onClick={onclick}
+      onAnimationComplete={() => setVariant('default')}
       style={props.worker ? { zIndex: 3 } : {}}
     >
       <Building elevation={props.elevation}

@@ -3,6 +3,7 @@ import { GameEvent, GameResponse } from '../types/types';
 import { GameManager } from '../manager/gameManager';
 import { Game } from './game';
 import { SantoriniGame } from './santorini';
+import { Player } from '../player/player';
 
 export class SantoriniAdapter extends Game {
   game: SantoriniGame | undefined;
@@ -42,6 +43,14 @@ export class SantoriniAdapter extends Game {
       console.log(response);
       if (response.error) this.io.to(event.id).emit('game update', response);
       else this.io.to(this.roomId).emit('game update', response);
+    }
+  }
+
+  addPlayer(player: Player) {
+    super.addPlayer(player);
+    if (this.playerManager.getCount() === 2) {
+      let response = this.start();
+      this.io.to(this.roomId).emit('game update', response);
     }
   }
 
