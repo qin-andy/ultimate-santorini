@@ -23,9 +23,14 @@ export class SantoriniAdapter extends Game {
       return this.game?.makeMove(event);
     }
 
+    const winMoveHandler = (event: GameEvent) => {
+      return this.game?.makeWinMove(event);
+    }
+
     this.eventHandlerMap.set('santorini start', startHandler);
     this.eventHandlerMap.set('santorini place', placementHandler);
     this.eventHandlerMap.set('santorini move', moveHandler);
+    this.eventHandlerMap.set('santorini win move', winMoveHandler);
   }
 
   handleEvent(event: GameEvent) {

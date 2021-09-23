@@ -54,7 +54,6 @@ $elevation-base-size: $cell-size;
   width: $elevation-base-size - $elevation-size-offset * $elevation;
   position: relative;
   z-index: 2;
-
 }
 
 .elevation-1 {
@@ -73,8 +72,10 @@ $elevation-base-size: $cell-size;
 }
 
 .elevation-4 {
-  @include building-style(4);
-  background-color: #555555;
+  height: $cell-size;
+  width: $cell-size;
+  position: relative;
+  z-index: 5;
 }
 
 .worker {

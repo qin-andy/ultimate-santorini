@@ -1,6 +1,6 @@
 import React, { ReactElement, useEffect, useState } from 'react';
 
-import socket, { getPlayerInfo, joinQueue, santoriniMove, santoriniPlace, santoriniStart } from '../services/socket';
+import socket, { getPlayerInfo, joinQueue, santoriniMove, santoriniPlace, santoriniStart, santoriniWinMove } from '../services/socket';
 import { useAppDispatch, useAppSelector } from '../hooks/hooks';
 import { GameResponse, ManagerResponse, marking } from '../types';
 import './santorini.scss';
@@ -199,6 +199,9 @@ const SantoriniBoard = (props: {}) => {
   }
 
   useEffect(() => {
+    if (boardData[selectedMove]?.elevation === 3) santoriniWinMove({
+      moveCoord: indexToCoord(selectedMove), workerCoord: indexToCoord(selectedWorker)
+    });
     updateBoardData();
   }, [elevations, phase, workers, turn, selectedWorker, selectedMove, highlightBuilds, highlightMoves]);
 
@@ -318,6 +321,12 @@ const SantoriniSquare = (props: {
         duration: 0.1
       }
     },
+    popIn: {
+      scale: 0.87,
+      transition: {
+        duration: 0.1
+      }
+    },
     moveHighlighted: {
       backgroundColor: '#DDDDDD',
       scale: 0.9,
@@ -334,11 +343,13 @@ const SantoriniSquare = (props: {
     },
   }
 
+  let tappable = props.worker || (props.buildHighlighted && !props.worker) || (props.moveHighlighted && !props.worker);
   return (
     <motion.div
       className={'santorini-cell'}
       variants={cellVariants}
       whileHover={'hover'}
+      whileTap={'popIn'}
       animate={props.moveHighlighted ? 'moveHighlighted' : props.buildHighlighted ? 'buildHighlighted' : 'default'}
       onClick={onclick}
       style={props.worker ? { zIndex: 3 } : {}}
@@ -380,7 +391,7 @@ const Building = (props: {
       scale: 1,
       transition: {
         duration: 1.5,
-        repeat: 3,
+        repeat: Infinity,
         type: 'spring',
         bounce: 0.5
       }
@@ -395,13 +406,14 @@ const Building = (props: {
     layoutId={'worker-' + props.workerId}
     className={'worker-' + props.worker}
   />
-  if (props.elevation >= 4) child = <motion.div
+  if (props.elevation >= 4) child = <motion.img
+    src='x.svg'
+    alt='capped tower'
     variants={buildingVariants}
     initial='initial'
     animate='default'
     className='elevation-4'>
-    {child}
-  </motion.div>
+  </motion.img>
   if (props.elevation >= 3) child = <motion.div
     variants={buildingVariants}
     initial='initial'

@@ -96,6 +96,93 @@ export class SantoriniGame {
     return response;
   }
 
+  makeWinMove(event: GameEvent) {
+    let response = this.createBlankResponse();
+    response.type = 'santorini move';
+    let player = this.turnMap.get(event.id);
+    if (!this.running) {
+      response.error = true;
+      response.message = 'game no longer running!'
+      return response;
+    }
+    else if (player !== this.turn) {
+      response.error = true;
+      response.message = 'not your turn!';
+      return response;
+    } else if (this.phase !== 'build') {
+      response.error = true;
+      response.message = 'its not the building phase yet!';
+      return response;
+    }
+
+    let workerCoord = event.payload.workerCoord;
+    let moveCoord = event.payload.moveCoord;
+
+    // has to originate from a space with a worker
+    if (this.turn === 'red') {
+      if (!this.coordsAreEqual(workerCoord, this.redWorker1)
+        && !this.coordsAreEqual(workerCoord, this.redWorker2)) {
+        response.error = true;
+        response.message = 'no red worker at that space!';
+        return response;
+      }
+    } else if (this.turn === 'blue') {
+      if (!this.coordsAreEqual(workerCoord, this.blueWorker1)
+        && !this.coordsAreEqual(workerCoord, this.blueWorker2)) {
+        response.error = true;
+        response.message = 'no blue worker at that space!';
+        return response;
+      }
+    }
+
+    // cannot move or build more than one space away
+    if (this.distBetweenCoords(workerCoord, moveCoord) !== 1) {
+      response.error = true;
+      response.message = 'coords are not adjacent!';
+      return response;
+    }
+
+    // cannot move or build on spaces with workers
+    let occupiedIndecies = new Set();
+    this.getWorkerCoords().forEach(worker => {
+      occupiedIndecies.add(this.getIndex(worker));
+    });
+    if (occupiedIndecies.has(this.getIndex(moveCoord))) {
+      response.error = true;
+      response.message = 'space is already occupied'
+      return response;
+    }
+
+    // cannot move to spaces more than 1 above
+    if (this.board[this.getIndex(moveCoord)] - this.board[this.getIndex(workerCoord)] > 1) {
+      response.error = true;
+      response.message = 'space is too high to move to!';
+      return response;
+    }
+
+    if (this.coordsAreEqual(workerCoord, this.redWorker1)) this.redWorker1 = moveCoord;
+    else if (this.coordsAreEqual(workerCoord, this.redWorker2)) this.redWorker2 = moveCoord;
+    else if (this.coordsAreEqual(workerCoord, this.blueWorker1)) this.blueWorker1 = moveCoord;
+    else if (this.coordsAreEqual(workerCoord, this.blueWorker2)) this.blueWorker2 = moveCoord;
+
+    if (this.board[this.getIndex(moveCoord)] === 3) {
+      response.type = 'santorini win';
+      response.message = this.turn + ' player win!';
+      response.payload = {
+        board: this.board,
+        workers: this.getWorkerCoords(),
+        turn: this.turn,
+        winningCoord: moveCoord,
+        winner: this.turn
+      }
+      return response;
+    } else {
+      response.error = true
+      response.message = 'win move invalid!';
+      return response;
+    }
+  }
+
   // payload:
   // workerCoord: coord
   // moveCoord: coord,

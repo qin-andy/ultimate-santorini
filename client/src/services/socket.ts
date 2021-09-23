@@ -43,4 +43,8 @@ export const santoriniMove = (payload: any) => {
   socket.emit('game action', 'santorini move', payload);
 }
 
+export const santoriniWinMove = (payload: any) => {
+  socket.emit('game action', 'santorini win move', payload);
+}
+
 export default socket;
