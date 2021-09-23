@@ -1,4 +1,4 @@
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { GameEvent, GameResponse } from '../types/types';
 import { GameManager } from '../manager/gameManager';
 import { Game } from './game';

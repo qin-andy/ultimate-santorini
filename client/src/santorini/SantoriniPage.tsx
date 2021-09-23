@@ -8,16 +8,6 @@ import { AnimateSharedLayout, motion } from 'framer-motion';
 
 type Coord = { x: number, y: number };
 
-interface SquareData {
-  index: number,
-  coord: Coord,
-  worker: '' | 'red' | 'blue',
-  workerId: number,
-  elevation: number,
-  moveHighlighted: boolean,
-  buildHighlighted: boolean
-}
-
 const SantoriniPage = () => {
   const dispatch = useAppDispatch();
   useEffect(() => {
@@ -50,7 +40,13 @@ const SantoriniPage = () => {
         dispatch({ type: 'santorini/santoriniWorkerPlaced', payload: response.payload });
       } else if (response.type === 'santorini move') {
         console.log('move receieved');
-        if (!response.error) dispatch({ type: 'santorini/santoriniMoved', payload: response.payload })
+        if (!response.error) dispatch({ type: 'santorini/santoriniMoved', payload: response.payload });
+      } else if (response.type === 'santorini win') {
+        console.log('move receieved');
+        if (!response.error) {
+          dispatch({ type: 'santorini/santoriniMoved', payload: response.payload });
+          dispatch({ type: 'santorini/santoriniWon', payload: response.payload });
+        }
       }
     });
 
@@ -73,6 +69,18 @@ const SantoriniPage = () => {
   );
 }
 
+
+interface SquareData {
+  index: number,
+  coord: Coord,
+  worker: '' | 'red' | 'blue',
+  workerId: number,
+  elevation: number,
+  moveHighlighted: boolean,
+  buildHighlighted: boolean,
+  isWinningCoord: boolean
+}
+
 const SantoriniBoard = (props: {}) => {
   const [selectedWorker, setSelectedWorker] = useState(-1);
   const [selectedMove, setSelectedMove] = useState(-1);
@@ -84,6 +92,7 @@ const SantoriniBoard = (props: {}) => {
   const phase = useAppSelector(state => state.santorini.phase);
   const workers = useAppSelector(state => state.santorini.workers);
   const turn = useAppSelector(state => state.santorini.turn);
+  const winningCoord = useAppSelector(state => state.santorini.winningCoord);
 
   function indexToCoord(index: number): Coord {
     return { x: index % 5, y: Math.floor(index / 5) }
@@ -120,7 +129,6 @@ const SantoriniBoard = (props: {}) => {
       return adjacentIndexes;
     }
 
-
     for (let i = 0; i < 25; i++) {
       let squareData: SquareData = {
         index: i,
@@ -129,7 +137,8 @@ const SantoriniBoard = (props: {}) => {
         workerId: -1,
         elevation: 0,
         moveHighlighted: false,
-        buildHighlighted: false
+        buildHighlighted: false,
+        isWinningCoord: false
       }
       boardData.push(squareData)
     }
@@ -178,6 +187,10 @@ const SantoriniBoard = (props: {}) => {
           boardData[index].buildHighlighted = true;
       });
     }
+
+    //populate winning coord
+    let winningIndex = winningCoord.x + winningCoord.y * 5;
+    if (winningIndex >= 0) boardData[winningIndex].isWinningCoord = true;
     return boardData;
   }
 
@@ -215,8 +228,9 @@ const SantoriniBoard = (props: {}) => {
         setHighlightMoves={setHighlightMoves}
         sendAction={sendAction}
         updateBoardData={updateBoardData}
+        isWinningCoord={squareData.isWinningCoord}
       />
-    )
+    );
   });
 
   return (
@@ -247,6 +261,7 @@ const SantoriniSquare = (props: {
   highlightBuilds: boolean,
   highlightMoves: boolean,
   updateBoardData: Function,
+  isWinningCoord: boolean
 }) => {
   // TODO : raise props
   const turn = useAppSelector(state => state.santorini.turn);
@@ -332,13 +347,21 @@ const SantoriniSquare = (props: {
         worker={props.worker}
         workerId={props.workerId}
         phase={props.phase}
+        isWinningCoord={props.isWinningCoord}
         turn={turn}
       />
     </motion.div>
   )
 }
 
-const Building = (props: { elevation: number, worker: string, workerId: number, phase: string, turn: string }) => {
+const Building = (props: {
+  elevation: number,
+  worker: string,
+  workerId: number,
+  phase: string,
+  turn: string,
+  isWinningCoord: boolean,
+}) => {
   let buildingVariants = {
     initial: {
       scale: 0
@@ -350,6 +373,17 @@ const Building = (props: { elevation: number, worker: string, workerId: number, 
         bounce: 0.5,
         duration: 0.75
       }
+    },
+    winning: {
+      rotate: 360,
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 1.5,
+        repeat: 3,
+        type: 'spring',
+        bounce: 0.5
+      }
     }
   }
 
@@ -357,7 +391,7 @@ const Building = (props: { elevation: number, worker: string, workerId: number, 
   if (props.worker) child = <motion.div
     variants={buildingVariants}
     initial={props.phase === 'placement' ? 'initial' : 'default'} // animation should trigger after phase change
-    animate={'default'}
+    animate={props.isWinningCoord ? 'winning' : 'default'}
     layoutId={'worker-' + props.workerId}
     className={'worker-' + props.worker}
   />
@@ -371,21 +405,21 @@ const Building = (props: { elevation: number, worker: string, workerId: number, 
   if (props.elevation >= 3) child = <motion.div
     variants={buildingVariants}
     initial='initial'
-    animate='default'
+    animate={props.isWinningCoord ? 'winning' : 'default'}
     className='elevation-3'>
     {child}
   </motion.div>
   if (props.elevation >= 2) child = <motion.div
     variants={buildingVariants}
     initial='initial'
-    animate='default'
+    animate={props.isWinningCoord ? 'winning' : 'default'}
     className='elevation-2'>
     {child}
   </motion.div>
   if (props.elevation >= 1) child = <motion.div
     variants={buildingVariants}
     initial='initial'
-    animate='default'
+    animate={props.isWinningCoord ? 'winning' : 'default'}
     className='elevation-1'>
     {child}
   </motion.div>

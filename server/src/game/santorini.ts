@@ -5,6 +5,7 @@ export type Turn = 'red' | 'blue';
 export type Coord = { x: number, y: number };
 
 export class SantoriniGame {
+  running: boolean;
   board: number[];
   phase: string;
   turn: Turn;
@@ -16,6 +17,7 @@ export class SantoriniGame {
   blueWorker2: Coord;
 
   constructor(player1: string, player2: string) {
+    this.running = true;
     this.board = [
       0, 0, 0, 0, 0,
       0, 0, 0, 0, 0,
@@ -102,8 +104,12 @@ export class SantoriniGame {
     let response = this.createBlankResponse();
     response.type = 'santorini move';
     let player = this.turnMap.get(event.id);
-
-    if (player !== this.turn) {
+    if (!this.running) {
+      response.error = true;
+      response.message = 'game no longer running!'
+      return response;
+    }
+    else if (player !== this.turn) {
       response.error = true;
       response.message = 'not your turn!';
       return response;
@@ -177,15 +183,26 @@ export class SantoriniGame {
     else if (this.coordsAreEqual(workerCoord, this.blueWorker1)) this.blueWorker1 = moveCoord;
     else if (this.coordsAreEqual(workerCoord, this.blueWorker2)) this.blueWorker2 = moveCoord;
     this.board[this.getIndex(buildCoord)] += 1;
-    // todo : check in
 
-    this.turn = this.nextTurn();
-    response.payload = {
-      board: this.board,
-      workers: this.getWorkerCoords(),
-      turn: this.turn
+    if (this.board[this.getIndex(moveCoord)] === 3) {
+      response.type = 'santorini win';
+      response.message = this.turn + ' player win!';
+      response.payload = {
+        board: this.board,
+        workers: this.getWorkerCoords(),
+        turn: this.turn,
+        winningCoord: moveCoord,
+        winner: this.turn
+      }
+    } else {
+      this.turn = this.nextTurn();
+      response.payload = {
+        board: this.board,
+        workers: this.getWorkerCoords(),
+        turn: this.turn
+      }
+      response.message = 'successful move';
     }
-    response.message = 'successful move';
     return response;
   }
 

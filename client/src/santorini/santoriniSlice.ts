@@ -1,5 +1,4 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { GameResponse } from "../types";
 
 type Coord = { x: number, y: number };
 
@@ -8,7 +7,9 @@ interface SantoriniSlice {
   board: number[],
   workers: Coord[]
   turn: 'red' | 'blue',
-  phase: 'pregame' | 'placement' | 'build'
+  phase: 'pregame' | 'placement' | 'build' | 'postgame',
+  winner: 'red' | 'blue' | '',
+  winningCoord: Coord
 }
 
 const initialState: SantoriniSlice = {
@@ -16,7 +17,9 @@ const initialState: SantoriniSlice = {
   board: [0],
   workers: [],
   turn: 'red',
-  phase: 'pregame'
+  phase: 'pregame',
+  winner: '',
+  winningCoord: {x: -1, y: -1}
 }
 
 const santoriniSlice = createSlice({
@@ -40,9 +43,14 @@ const santoriniSlice = createSlice({
       state.board = action.payload.board;
       state.workers = action.payload.workers;
       state.turn = action.payload.turn;
+    },
+    santoriniWon(state, action) {
+      state.winner = action.payload.winner;
+      state.winningCoord = action.payload.winningCoord;
+      state.phase = 'postgame';
     }
   }
 });
 
 export default santoriniSlice.reducer;
-export const { santoriniStarted, santoriniWorkerPlaced, santoriniMoved } = santoriniSlice.actions;
+export const { santoriniStarted, santoriniWorkerPlaced, santoriniMoved, santoriniWon } = santoriniSlice.actions;
