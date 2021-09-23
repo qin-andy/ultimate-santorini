@@ -1,15 +1,18 @@
-$cell-size: 8vh;
+$cell-size: 15vh;
 $cell-enter-distance: 20vh;
 $cell-enter-duration: 500ms;
 $cell-mark-duration: 200ms;
 
+$worker-size: 5vh;
+
+
 .santorini-cell {
   height: $cell-size;
   width: $cell-size;
-  border: 6px;
+  border: 3px;
   border-style: solid;
-  border-color: black;
-  border-radius: 16px;
+  border-color: #EEEEEE;
+  border-radius: 0px;
   position: relative;
   transition: background-color 100ms;
   display: flex;
@@ -19,7 +22,7 @@ $cell-mark-duration: 200ms;
 
   p {
     margin: 0;
-    font-size: 30px;
+    font-size: 60px;
   }
 
   &:hover {
@@ -29,17 +32,56 @@ $cell-mark-duration: 200ms;
 }
 
 .move-highlighted {
-  background-color: rgb(180, 180, 180);
+  background-color: #DDDDDD;
 }
 
 .build-highlighted {
-  background-color: rgb(107, 107, 107);
+  background-color: #CCCCCC;
 }
 
-.red {
-  background-color: red;
+$elevation-size-offset: $cell-size * (1/6);
+$elevation-base-size: $cell-size;
+@mixin building-style($elevation) {
+  border: 0px;
+  border-style: solid;
+  border-color: rgb(0, 0, 0);
+  border-radius: 3vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: $elevation-base-size - $elevation-size-offset * $elevation;
+  width: $elevation-base-size - $elevation-size-offset * $elevation;
+
 }
 
-.blue {
-  background-color: blue;
+.elevation-1 {
+  @include building-style(1);
+  background-color: #333333;
+}
+
+.elevation-2 {
+  @include building-style(2);
+  background-color: #777777;
+}
+
+.elevation-3 {
+  @include building-style(3);
+  background-color: #CCCCCC;
+}
+
+.elevation-4 {
+  @include building-style(4);
+  background-color: #555555;
+}
+
+.worker {
+  &-red {
+    @include building-style(3);
+    background-color: rgb(255, 97, 97);
+  }
+  &-blue {
+    @include building-style(3);
+    background-color: rgb(144, 144, 255);
+  }
 }

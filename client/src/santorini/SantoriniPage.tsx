@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { ReactElement, useEffect, useState } from 'react';
 
 import socket, { getPlayerInfo, joinQueue, santoriniMove, santoriniPlace, santoriniStart } from '../services/socket';
 import { useAppDispatch, useAppSelector } from '../hooks/hooks';
@@ -257,7 +257,6 @@ const SantoriniSquare = (props: {
             props.sendAction(props.index);
           } else {
             console.log('all deselected');
-
             props.setHighlightMoves(false);
             props.setHighlightBuilds(false);
             props.setSelectedMove(-1);
@@ -273,13 +272,22 @@ const SantoriniSquare = (props: {
 
   return (
     <div
-      className={'santorini-cell ' + props.worker + moveHighlighted + buildHighlighted}
+      className={'santorini-cell ' + moveHighlighted + buildHighlighted}
       onClick={onclick}
     >
-      <p>{props.elevation}</p>
-      <p>{props.worker}</p>
+      <Building elevation={props.elevation} worker={props.worker} />
     </div>
   )
+}
+
+const Building = (props: {elevation: number, worker: string}) => {
+  let child = <div></div>;
+  if (props.worker) child = <div className={'worker-' + props.worker} />
+  if (props.elevation >= 4) child = <div className='elevation-4'>{child}</div>
+  if (props.elevation >= 3) child = <div className='elevation-3'>{child}</div>
+  if (props.elevation >= 2) child = <div className='elevation-2'>{child}</div>
+  if (props.elevation >= 1) child = <div className='elevation-1'>{child}</div>
+  return child;
 }
 
 export default SantoriniPage;
