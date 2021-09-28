@@ -4,7 +4,7 @@ import socket, { getPlayerInfo, joinQueue, santoriniMove, santoriniPlace, santor
 import { useAppDispatch, useAppSelector } from '../hooks/hooks';
 import { GameResponse, ManagerResponse, marking } from '../types';
 import './santorini.scss';
-import { AnimateSharedLayout, motion } from 'framer-motion';
+import { AnimatePresence, AnimateSharedLayout, motion } from 'framer-motion';
 
 type Coord = { x: number, y: number };
 
@@ -19,12 +19,8 @@ const SantoriniPage = () => {
           type: 'manager/playerInfoReceived',
           payload: response.payload
         });
-        dispatch({
-          type: 'tictactoe/playerInfoReceived',
-          payload: response.payload
-        });
-      }
-      dispatch({ type: 'manager/managerResponseReceived', payload: response });
+      } else if (response.type === '')
+        dispatch({ type: 'manager/managerResponseReceived', payload: response });
     });
 
     socket.on('game update', (response: GameResponse) => {
@@ -47,6 +43,11 @@ const SantoriniPage = () => {
           dispatch({ type: 'santorini/santoriniMoved', payload: response.payload });
           dispatch({ type: 'santorini/santoriniWon', payload: response.payload });
         }
+      } else if (response.type === 'win disconnect') {
+        timeouts.push(setTimeout(() => {
+          dispatch({type: 'santorini/santoriniReset', payload: {}});
+          joinQueue();
+        }, 1000));
       }
     });
 
@@ -83,7 +84,7 @@ const SantoriniBoard = (props: {}) => {
   const [selectedMove, setSelectedMove] = useState(-1);
   const [highlightMoves, setHighlightMoves] = useState(false);
   const [highlightBuilds, setHighlightBuilds] = useState(false);
-  const [boardData, setBoardData] = useState<SquareData[]>([]);
+  const [boardData, setBoardData] = useState<SquareData[]>([]); // for finer tuned control of rerendersF
 
   const elevations = useAppSelector(state => state.santorini.board);
   const phase = useAppSelector(state => state.santorini.phase);
@@ -239,7 +240,9 @@ const SantoriniBoard = (props: {}) => {
         display: `grid`,
         gridTemplateColumns: `repeat(5, 1fr)`
       }}>
-        {phase === 'pregame' ? null : boardSquares}
+        <AnimatePresence>
+          {phase === 'pregame' ? null : boardSquares}
+        </AnimatePresence>
       </div>
     </AnimateSharedLayout>
   )
@@ -263,7 +266,6 @@ const SantoriniSquare = (props: {
   updateBoardData: Function,
   isWinningCoord: boolean
 }) => {
-  // TODO : raise props
   const turn = useAppSelector(state => state.santorini.turn);
   const [variant, setVariant] = useState('initial');
   const player = useAppSelector(state => state.santorini.player);
@@ -359,19 +361,26 @@ const SantoriniSquare = (props: {
         duration: 0.1
       }
     },
+    exit: {
+      x: 0, y: 100, opacity: 0,
+      transition: {
+        duration: 0.5,
+        delay: delay
+      }
+    }
   }
 
-  let tappable = props.worker || (props.buildHighlighted && !props.worker) || (props.moveHighlighted && !props.worker);
   return (
     <motion.div
       className={'santorini-cell'}
       variants={cellVariants}
       animate={props.moveHighlighted ? 'moveHighlighted' : props.buildHighlighted ? 'buildHighlighted' : variant}
       initial='beforeEnter'
-      whileHover={'hover'}
-      whileTap={'popIn'}
+      whileHover={variant === 'default' ? 'hover' : ''}
+      whileTap={variant === 'default' ? 'popIn' : ''}
       onClick={onclick}
       onAnimationComplete={() => setVariant('default')}
+      exit='exit'
       style={props.worker ? { zIndex: 3 } : {}}
     >
       <Building elevation={props.elevation}

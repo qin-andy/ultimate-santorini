@@ -54,6 +54,27 @@ export class SantoriniAdapter extends Game {
     }
   }
 
+  // @override
+  // auto end game when one player is disconnected
+  removePlayer(id: string) {
+    let removedPlayer = super.removePlayer(id);
+    if (this.playerManager.getCount() <= 1) {
+      let response = {
+        error: false,
+        payload: {
+          name: removedPlayer?.name
+        },
+        type: 'win disconnect',
+        message: removedPlayer?.name + ' has disconnected!',
+      }
+      this.io.to(this.roomId).emit('game update', response);
+      this.active = false;
+      this.end();
+      this.playerManager.removePlayer(this.playerManager.getIds()[0]);
+    }
+    return removedPlayer;
+  }
+
   start(): GameResponse {
     this.running = true;
     let players = this.playerManager.getIds();

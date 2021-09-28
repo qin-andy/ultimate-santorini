@@ -96,6 +96,7 @@ export class SantoriniGame {
     return response;
   }
 
+  // copied makemove, TODO:reefactor
   makeWinMove(event: GameEvent) {
     let response = this.createBlankResponse();
     response.type = 'santorini move';

@@ -48,9 +48,12 @@ const santoriniSlice = createSlice({
       state.winner = action.payload.winner;
       state.winningCoord = action.payload.winningCoord;
       state.phase = 'postgame';
+    },
+    santoriniReset(state, action) {
+      state = initialState;
     }
   }
 });
 
 export default santoriniSlice.reducer;
-export const { santoriniStarted, santoriniWorkerPlaced, santoriniMoved, santoriniWon } = santoriniSlice.actions;
+export const { santoriniStarted, santoriniWorkerPlaced, santoriniMoved, santoriniWon, santoriniReset } = santoriniSlice.actions;
