@@ -1,10 +1,15 @@
 # [ultimate-santorini](https://santorini-live.herokuapp.com/)
-A multiplayer matchmaking-based platform on the popular board game. **Enter matchmaking queue just by loading the page!**
+
+A multiplayer matchmaking-based platform on the popular block-building board game. **Enter matchmaking queue just by loading the page!**
+
+Supports online crossplay between 2d web client and Unity3d native application client.
 
 Frontend web client written in **[React](https://reactjs.org/)**, and **[Framer Motion](https://www.framer.com/motion/)**. Backend game server written in **Node**, **[Express](https://expressjs.com/)**, and **[SocketIO](https://socket.io/)**. Native PC and MacOS clients written in **C#** using **[Unity3D](https://unity.com/)**. Computer player AI written in C#.
 
+<img src="https://github.com/qin-andy/ultimate-santorini/blob/main/images/santorini.png" alt="blocks and buildings on the web and unity clients"></img>
+
 ## Related Repos
-### [Unity client here](https://github.com/qin-andy/santorini-unity-client)
+### [Download Unity client](https://github.com/qin-andy/santorini-unity-client)
 ### [Visit the web deployment](https://santorini-live.herokuapp.com/)
 ### [Computer AI Opponent](https://github.com/AdeptLearner123/SantoriniBot/commits/main)
 
