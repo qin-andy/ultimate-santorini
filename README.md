@@ -1,14 +1,12 @@
-# [santorini-live](https://gomoku-live.herokuapp.com/)
-A multiplayer matchmaking-based 5-in-a-row web experience with minimal setup. **Enter matchmaking queue just by loading the page!**
+# [ultimate-santorini](https://santorini-live.herokuapp.com/)
+A multiplayer matchmaking-based platform on the popular board game. **Enter matchmaking queue just by loading the page!**
 
-Frontend web client written in **[React](https://reactjs.org/)**, **[Redux](https://redux.js.org/)**, and **[Framer Motion](https://www.framer.com/motion/)**. Backend game server written in **Node**, **[Express](https://expressjs.com/)**, and **[SocketIO](https://socket.io/)**, with comprehensive testing suite written in Jest
+Frontend web client written in **[React](https://reactjs.org/)**, and **[Framer Motion](https://www.framer.com/motion/)**. Backend game server written in **Node**, **[Express](https://expressjs.com/)**, and **[SocketIO](https://socket.io/)**. Native PC and MacOS clients written in **C#** using **[Unity3D](https://unity.com/)**. Computer player AI written in C#.
 
-## Features
-  - Seamless matchmaking experience with automated queuing, game creation, and requeing on game end
-  - Fluid, minimalist UI and animations powered by React and Framer Motion
-  - Customizable setup options with simple configuration options for board size, win conditions, automated queuing
-  - Extendable player management and game management backend architecture featuring custom game support
-  - Complete backend testing suite
+## Related Repos
+### [Unity client here](https://github.com/qin-andy/santorini-unity-client)
+### [Visit the web deployment](https://santorini-live.herokuapp.com/)
+### [Computer AI Opponent](https://github.com/AdeptLearner123/SantoriniBot/commits/main)
 
 ## Usage
 ### Setting up Local Development
@@ -17,7 +15,6 @@ Both the frontend and backend are written in [Typescript](https://www.typescript
   2. Install workspace dependencies from root with ``yarn install``
   3. Run ``yarn workspace client start`` for the React live development server on ``http://localhost:3000``, proxied to port 3001
   4. Run ``yarn workspace server start`` for hot-reloading backend development on ``http://localhost:3001``
-  5. Run Jest test suite with ``yarn workspace server jest``
 
 ### Build and Deployment
   1. Run ``yarn workspace client build`` to bundle frontend into ``client/build`` folder
