@@ -49,12 +49,19 @@ export class Game {
     // default handles all existing events
     let handler = this.eventHandlerMap.get(event.type)
     if (handler) handler(event);
-    
   }
 
   addPlayer(player: Player) {
     player.socket.join(this.roomId);
     player.socket.on('game action', (name: any, payload: any, acknowledger: Function) => {
+      if (typeof payload === 'string') { // for unity parsing
+        try {
+          console.log("Attempting parse");
+          let parsedPayload = JSON.parse(payload);
+          console.log("Parsed: " + parsedPayload);
+          payload = parsedPayload;
+        } catch (e) { console.log(e) }
+      }
       let event: GameEvent = {
         type: name,
         payload: payload,

@@ -91,6 +91,7 @@ export class SantoriniGame {
       turn: this.turn,
       workers: this.getWorkerCoords(),
       board: this.board,
+      coord,
       done
     }
     return response;
@@ -287,7 +288,12 @@ export class SantoriniGame {
       response.payload = {
         board: this.board,
         workers: this.getWorkerCoords(),
-        turn: this.turn
+        turn: this.turn,
+        move: {
+          workerCoord,
+          moveCoord,
+          buildCoord
+        }
       }
       response.message = 'successful move';
     }
