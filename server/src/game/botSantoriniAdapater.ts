@@ -4,6 +4,7 @@ import { GameManager } from '../manager/gameManager';
 import { Game } from './game';
 import { SantoriniGame } from './santorini';
 import { Player } from '../player/player';
+import fetch from 'cross-fetch';
 
 export class BotSantoriniAdapter extends Game {
   game: SantoriniGame | undefined;
@@ -45,29 +46,37 @@ export class BotSantoriniAdapter extends Game {
       if (response.error) this.io.to(event.id).emit('game update', response);
       else {
         this.io.to(this.roomId).emit('game update', response);
-        
-        setTimeout(() => { // TODO: cleanup on game close
-          let botResponse = this.generateBotPlacement(response, {x: 0, y: 0});
-          console.log("Bot response:");
-          console.log(botResponse);
-          this.io.to(this.roomId).emit('game update', botResponse);
-        }, 500);
-        setTimeout(() => { // TODO: cleanup on game close
-          let botResponse = this.generateBotPlacement(response, {x: 1, y: 1});
-          console.log("Bot response:");
-          console.log(botResponse);
-          this.io.to(this.roomId).emit('game update', botResponse);
-        }, 1000);
+        this.getBotResponse(response);
       }
     }
   }
 
-  generateBotPlacement(response: GameResponse, location: {x: number, y: number}) {
+  getBotResponse(response: GameResponse) {
+    // Triggers on initial placement, will send two staggered placments;
+    if (response.type === 'placement update') {
+      setTimeout(() => { // TODO: cleanup on game close
+        let botResponse = this.generateBotPlacement(response, { x: 0, y: 0 });
+        console.log("Bot response:");
+        console.log(botResponse);
+        this.io.to(this.roomId).emit('game update', botResponse);
+      }, 500);
+      setTimeout(() => { // TODO: cleanup on game close
+        let botResponse = this.generateBotPlacement(response, { x: 1, y: 1 });
+        console.log("Bot response:");
+        console.log(botResponse);
+        this.io.to(this.roomId).emit('game update', botResponse);
+      }, 1000);
+    } else if (response.type === "santorini move") {
+      let move = this.boardToAPI();
+    }
+  }
+
+  generateBotPlacement(response: GameResponse, location: { x: number, y: number }) {
     if (!this.game) {
       throw new Error("gamenot wrunnign!"); // TODO: better;
     }
     let botResponse = this.game.createBlankResponse();
-    if (response.type = 'placement update') {
+    if (response.type === 'placement update') {
       let event: GameEvent = {
         type: 'santorini place',
         payload: { coord: location },
@@ -82,22 +91,47 @@ export class BotSantoriniAdapter extends Game {
     return botResponse;
   }
 
-  generateBotResponse(response: GameResponse) {
+  boardToAPI() {
     if (!this.game) {
-      throw new Error("gamenot wrunnign!"); // TODO: better;
+      throw new Error("game not running!");
     }
-    let botResponse = this.game.createBlankResponse();
-    let event: GameEvent = {
-      type: '',
-      payload: {},
-      id: 'bot',
-      acknowledger: () => { }
-    }
-    botResponse.error = true; // not your turn
-    botResponse.message = 'not your turn!'
-    return botResponse;
-  }
 
+    let workers = this.game.getWorkerCoords();
+    let elevations2d: Array<Array<number>> = [];
+    for (let i = 0; i < 5; i++) {
+      let row: Array<number> = [];
+      for (let j = 0; j < 5; j++) {
+        row.push(this.game.board[j + i * 5]);
+      }
+      elevations2d.push(row);
+    }
+
+    let board = {
+      Worker1: { X: workers[2].x, Y: workers[2].y },
+      Worker2: { X: workers[3].x, Y: workers[3].y },
+      OpponentWorker1: { X: workers[0].x, Y: workers[0].y },
+      OpponentWorker2: { X: workers[1].x, Y: workers[1].y },
+      Cells: elevations2d
+    }
+
+    // let preBoard = '{"Worker1": { "X": 0, "Y": 1 },"Worker2": { "X": 2, "Y": 2 },"OpponentWorker1": { "X": 1, "Y": 1 },"OpponentWorker2": { "X": 3, "Y": 3 },"Cells": [[ 2, 0, 0, 3, 0], [ 3, 0, 0, 3, 0], [ 3, 2, 0, 2, 0],[ 0, 2, 3, 0, 0],[ 0, 0, 0, 0, 0 ]]}'
+    let boardJson = JSON.stringify(board);
+    console.log(boardJson);
+    
+    fetch('https://localhost:5001/MoveGenerator', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: boardJson
+    })
+      .then(response => response.json())
+      .then(json => {
+        console.log("Bot move: ");
+        console.log(json);
+      });
+  }
 
   addPlayer(player: Player) {
     super.addPlayer(player);

@@ -6,7 +6,7 @@ import { ManagerEvent, ManagerResponse, ManagerHandler } from "../types/types";
 import { TicTacToeAutoGame } from "../game/tictactoeAuto";
 import { nanoid } from "nanoid";
 import { SantoriniAdapter } from "../game/santoriniAdapater";
-import { BotSantoriniAdapter } from "../game/botSantoriniAdapater copy";
+import { BotSantoriniAdapter } from "../game/botSantoriniAdapater";
 
 const DISCONNECT_TIMEOUT = 300000; // 5 minutes
 
