@@ -11,7 +11,7 @@ Frontend web client written in **[React](https://reactjs.org/)**, and **[Framer 
 ## Related Repos
 ### [Download Unity client](https://github.com/qin-andy/santorini-unity-client)
 ### [Visit the web deployment](https://santorini-live.herokuapp.com/)
-### [Computer AI Opponent](https://github.com/AdeptLearner123/SantoriniBot/commits/main)
+### [Computer AI Opponent Microservice](https://github.com/qin-andy/SantoriniBot.git)
 
 ## Usage
 ### Setting up Local Development
