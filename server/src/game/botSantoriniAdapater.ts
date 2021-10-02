@@ -66,8 +66,10 @@ export class BotSantoriniAdapter extends Game {
         console.log(botResponse);
         this.io.to(this.roomId).emit('game update', botResponse);
       }, 1000);
+
+      // When the player makes a move
     } else if (response.type === "santorini move") {
-      let move = this.boardToAPI();
+      this.makeBotMove();
     }
   }
 
@@ -91,17 +93,18 @@ export class BotSantoriniAdapter extends Game {
     return botResponse;
   }
 
-  boardToAPI() {
+  makeBotMove() {
     if (!this.game) {
       throw new Error("game not running!");
     }
 
+    // Serialize game state into json
     let workers = this.game.getWorkerCoords();
     let elevations2d: Array<Array<number>> = [];
-    for (let i = 0; i < 5; i++) {
+    for (let y = 0; y < 5; y++) {
       let row: Array<number> = [];
-      for (let j = 0; j < 5; j++) {
-        row.push(this.game.board[j + i * 5]);
+      for (let x = 0; x < 5; x++) {
+        row.push(this.game.board[x + y * 5]);
       }
       elevations2d.push(row);
     }
@@ -117,7 +120,7 @@ export class BotSantoriniAdapter extends Game {
     // let preBoard = '{"Worker1": { "X": 0, "Y": 1 },"Worker2": { "X": 2, "Y": 2 },"OpponentWorker1": { "X": 1, "Y": 1 },"OpponentWorker2": { "X": 3, "Y": 3 },"Cells": [[ 2, 0, 0, 3, 0], [ 3, 0, 0, 3, 0], [ 3, 2, 0, 2, 0],[ 0, 2, 3, 0, 0],[ 0, 0, 0, 0, 0 ]]}'
     let boardJson = JSON.stringify(board);
     console.log(boardJson);
-    
+    // Send board to API
     fetch('https://localhost:5001/MoveGenerator', {
       method: 'POST',
       headers: {
@@ -128,8 +131,24 @@ export class BotSantoriniAdapter extends Game {
     })
       .then(response => response.json())
       .then(json => {
-        console.log("Bot move: ");
-        console.log(json);
+        // convert API action into game move payload
+        let botAction: any = JSON.parse(json);
+        console.log("Recieved bot action:");
+        console.log(botAction);
+        let payload = {
+          workerCoord: {x: botAction.Worker.X, y: botAction.Worker.Y},
+          moveCoord: {x: botAction.Move.X, y: botAction.Move.Y},
+          buildCoord: {x: botAction.Build.X, y: botAction.Build.Y},
+        }
+        let event: GameEvent = {
+          type: 'santorini move',
+          id: 'bot',
+          payload: payload,
+          acknowledger: () => {}
+        }
+        console.log(payload);
+        let response = this.game?.makeMove(event);
+        this.io.to(this.roomId).emit('game update', response);
       });
   }
 
