@@ -6,6 +6,7 @@ import { ManagerEvent, ManagerResponse, ManagerHandler } from "../types/types";
 import { TicTacToeAutoGame } from "../game/tictactoeAuto";
 import { nanoid } from "nanoid";
 import { SantoriniAdapter } from "../game/santoriniAdapater";
+import { BotSantoriniAdapter } from "../game/botSantoriniAdapater copy";
 
 const DISCONNECT_TIMEOUT = 300000; // 5 minutes
 
@@ -39,35 +40,58 @@ export class GameManager {
     this.gamesMap.delete(game.name);
   }
 
+  // matchmakePlayersInQueue(): boolean {
+  //   if (this.matchmakingQueue.length >= 2) {
+  //     let player1id = this.matchmakingQueue.shift();
+  //     if (!player1id) return false;
+  //     let player1 = this.playersMap.get(player1id);
+  //     if (!player1 || !player1.socket.connected) return false;
+
+  //     let player2id = this.matchmakingQueue.shift();
+  //     let player2 = this.playersMap.get('' + player2id);
+  //     if (!player2 || !player2.socket.connected) {
+  //       this.matchmakingQueue.push(player1id);
+  //       return false;
+  //     }
+
+  //     // Mokugo variant:
+  //     // let newGame = new TicTacToeAutoGame(player1id + player2id, this.io, this, {x: 9, y: 9, winSize: 5});
+  //     let newGame = new SantoriniAdapter('santorini', this.io, this);
+  //     newGame.addPlayer(player1);
+  //     newGame.addPlayer(player2);
+  //     this.gamesMap.set(newGame.name, newGame);
+
+  //     let response = {
+  //       error: false,
+  //       payload: player1id + player2id,
+  //       type: 'queue game found',
+  //       message: 'game found!'
+  //     }
+  //     this.io.to(player1.socket.id).emit('manager response', response);
+  //     this.io.to(player2.socket.id).emit('manager response', response);
+  //     return true;
+  //   }
+  //   return false;
+  // }
+
   matchmakePlayersInQueue(): boolean {
-    if (this.matchmakingQueue.length >= 2) {
+    if (this.matchmakingQueue.length > 0) {
       let player1id = this.matchmakingQueue.shift();
       if (!player1id) return false;
       let player1 = this.playersMap.get(player1id);
       if (!player1 || !player1.socket.connected) return false;
 
-      let player2id = this.matchmakingQueue.shift();
-      let player2 = this.playersMap.get('' + player2id);
-      if (!player2 || !player2.socket.connected) {
-        this.matchmakingQueue.push(player1id);
-        return false;
-      }
-
-      // Mokugo variant:
-      // let newGame = new TicTacToeAutoGame(player1id + player2id, this.io, this, {x: 9, y: 9, winSize: 5});
-      let newGame = new SantoriniAdapter('santorini', this.io, this);
+      let newGame = new BotSantoriniAdapter(player1.socket.id, this.io, this);
       newGame.addPlayer(player1);
-      newGame.addPlayer(player2);
       this.gamesMap.set(newGame.name, newGame);
 
       let response = {
         error: false,
-        payload: player1id + player2id,
+        payload: player1id,
         type: 'queue game found',
         message: 'game found!'
       }
       this.io.to(player1.socket.id).emit('manager response', response);
-      this.io.to(player2.socket.id).emit('manager response', response);
       return true;
     }
     return false;
