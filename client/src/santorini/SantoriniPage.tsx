@@ -1,8 +1,8 @@
-import React, { ReactElement, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-import socket, { getPlayerInfo, joinQueue, santoriniMove, santoriniPlace, santoriniStart, santoriniWinMove } from '../services/socket';
+import socket, { getPlayerInfo, joinQueue, santoriniMove, santoriniPlace, santoriniWinMove } from '../services/socket';
 import { useAppDispatch, useAppSelector } from '../hooks/hooks';
-import { GameResponse, ManagerResponse, marking } from '../types';
+import { GameResponse, ManagerResponse } from '../types';
 import './santorini.scss';
 import { AnimatePresence, AnimateSharedLayout, motion } from 'framer-motion';
 

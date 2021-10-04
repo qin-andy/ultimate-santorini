@@ -175,6 +175,7 @@ export class SantoriniGame {
         workers: this.getWorkerCoords(),
         turn: this.turn,
         winningCoord: moveCoord,
+        winningWorker: workerCoord,
         winner: this.turn
       }
       return response;
@@ -273,7 +274,7 @@ export class SantoriniGame {
     else if (this.coordsAreEqual(workerCoord, this.blueWorker2)) this.blueWorker2 = moveCoord;
     this.board[this.getIndex(buildCoord)] += 1;
 
-    if (this.board[this.getIndex(moveCoord)] === 3) {
+    if (this.board[this.getIndex(moveCoord)] === 3) { //TODO : delete, replaced by makeWinMove
       response.type = 'santorini win';
       response.message = this.turn + ' player win!';
       response.payload = {
@@ -281,6 +282,7 @@ export class SantoriniGame {
         workers: this.getWorkerCoords(),
         turn: this.turn,
         winningCoord: moveCoord,
+        winningWorker: workerCoord,
         winner: this.turn
       }
     } else {

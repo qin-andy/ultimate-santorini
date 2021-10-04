@@ -1,9 +1,7 @@
 import { Game } from "../game/game";
 import { Player } from "../player/player";
-import { TicTacToeGame } from '../game/tictactoe';
 import { Server } from 'socket.io';
 import { ManagerEvent, ManagerResponse, ManagerHandler } from "../types/types";
-import { TicTacToeAutoGame } from "../game/tictactoeAuto";
 import { nanoid } from "nanoid";
 import { SantoriniAdapter } from "../game/santoriniAdapater";
 import { BotSantoriniAdapter } from "../game/botSantoriniAdapater";
@@ -98,16 +96,6 @@ export class GameManager {
   }
 
   initializeHandlers() {
-    let pingHandler: ManagerHandler = (event) => {
-      let response: ManagerResponse = {
-        error: false,
-        type: 'ping',
-        payload: 'pong',
-        message: 'ping response is pong'
-      }
-      return response;
-    };
-
     let joinQueueHandler: ManagerHandler = (event) => {
       let response: ManagerResponse = {
         error: false,
@@ -129,63 +117,6 @@ export class GameManager {
         response.message = 'player does not exist!';
         response.error = true;
       }
-      return response;
-    };
-
-    let joinGameHandler: ManagerHandler = (event) => {
-      // payload: game name that the player is attempting tojoin
-      let game = this.gamesMap.get(event.payload.name);
-      let player = this.playersMap.get(event.id);
-
-      if (!player) {
-        let response = {
-          error: true,
-          type: 'does not exist',
-          payload: event.id,
-          message: 'player does not exist!'
-        }
-        return response;
-      }
-
-      if (player?.inGame) {
-        let response = {
-          error: true,
-          type: 'join game',
-          payload: player.currentGame?.name,
-          message: 'Player already in game: ' + player.currentGame?.name
-        }
-        return response;
-      }
-
-      if (!game) {
-        let response = {
-          error: true,
-          type: 'join game',
-          payload: event.payload,
-          message: 'game does not exist: ' + event.payload
-        }
-        return response;
-      }
-
-      if (game.active) {
-        let response = {
-          error: true,
-          type: 'join game',
-          payload: event.payload,
-          message: 'Game actively in progress: ' + event.payload
-        }
-        return response;
-      }
-
-      let response: ManagerResponse = {
-        error: false,
-        type: 'join game',
-        payload: event.payload,
-        message: ''
-      }
-
-      player.inGame = true;
-      game.addPlayer(player);
       return response;
     };
 
@@ -226,90 +157,17 @@ export class GameManager {
       return response;
     };
 
-    let createGameHandler: ManagerHandler = (event) => {
-      let player = this.playersMap.get(event.id);
-      if (!player) {
-        let response = {
-          error: true,
-          type: 'does not exist',
-          payload: event.id,
-          message: 'player does not exist!'
-        }
-        return response;
-      }
-
-      if (player?.inGame) {
-        let response = {
-          error: true,
-          type: 'create game',
-          payload: player.currentGame?.name,
-          message: 'Player already in game: ' + player.currentGame?.name
-        }
-        return response;
-      }
-
-      if (this.gamesMap.has(event.payload.name)) {
-        let response = {
-          error: true,
-          type: 'create game',
-          payload: event.payload.name,
-          message: 'Game name already exists: ' + event.payload.name
-        }
-        return response;
-      }
-
-      player.inGame = true;
-      let game: Game;
-      if (event.payload.type === 'tictactoe') {
-        if (event.payload.autoplay) {
-          game = new TicTacToeAutoGame(event.payload.name, this.io, this);
-        } else {
-          game = new TicTacToeGame(event.payload.name, this.io, this);
-        }
-      } else {
-        game = new Game(event.payload.name, this.io, this)
-      }
-      this.gamesMap.set(event.payload.name, game);
-      game.addPlayer(player);
-      let response = {
-        error: false,
-        type: 'create game',
-        payload: event.payload.name,
-        message: 'Game created: ' + event.payload.name
-      }
-      return response;
-    };
-
-    let playerInfoHandler: ManagerHandler = (event) => {
-      let player = this.playersMap.get(event.id);
-      if (!player) return {
-        error: true,
-        type: 'does not exist',
-        payload: event.id,
-        message: 'player id does not exist!'
-      }
-
-      let payload = {
-        name: player.name,
-        id: player.id,
-        inGame: player.inGame,
-        gameName: player.currentGame?.name
-      }
-
-      return {
-        error: false,
-        type: 'player info',
-        payload,
-        message: ''
-      }
-    }
-
-    this.eventHandlerMap.set('ping', pingHandler);
     this.eventHandlerMap.set('join queue', joinQueueHandler);
-    this.eventHandlerMap.set('join game', joinGameHandler);
-    this.eventHandlerMap.set('create game', createGameHandler);
     this.eventHandlerMap.set('leave game', leaveGameHandler);
-    this.eventHandlerMap.set('player info', playerInfoHandler);
+  }
+
+  handleEvent(event: ManagerEvent) {
+    let handler = this.eventHandlerMap.get(event.type);
+    if (handler) {
+      let response = handler(event);
+      this.io.to(event.id).emit('manager response', response);
+      event.acknowledger(response);
+    }
   }
 
   attachListeners(io: Server) {
@@ -336,16 +194,18 @@ export class GameManager {
 
       socket.on('disconnect', () => {
         // game removal handled in playerManagement class
-        clearTimeout(disconnectTimeout);
-        let index = this.matchmakingQueue.indexOf(socket.id);
+        clearTimeout(disconnectTimeout); // clear timeout timer
+        let index = this.matchmakingQueue.indexOf(socket.id); // remove from matchmaking queue
         if (index !== -1) {
           this.matchmakingQueue.splice(index, 1);
         }
         socket.removeAllListeners();
         let player = this.playersMap.get(socket.id);
+        //remove from current game
         let currentGame = player?.currentGame;
         player?.currentGame?.removePlayer(socket.id);
         if (currentGame?.playerManager.getCount() === 0) {
+          // close dead rooms
           this.closeGame(currentGame);
         }
         this.playersMap.delete(socket.id);
@@ -353,14 +213,6 @@ export class GameManager {
     });
   }
 
-  handleEvent(event: ManagerEvent) {
-    let handler = this.eventHandlerMap.get(event.type);
-    if (handler) {
-      let response = handler(event);
-      this.io.to(event.id).emit('manager response', response);
-      event.acknowledger(response);
-    }
-  }
 
   close() {
     this.gamesMap.forEach(game => {
