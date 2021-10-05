@@ -30,19 +30,7 @@ export class Game {
   }
 
   initializeHandlers() {
-    // default handlers for testing
-    const handleMirror = (event: any) => {
-      event.acknowledger(event);
-    }
-
-    const pingRoom = (event: GameEvent) => {
-      let fromPlayer = this.playerManager.getPlayerById(event.id)
-      fromPlayer?.socket.to(this.roomId).emit('ping room', fromPlayer.id + ': ' + event.payload);
-      event.acknowledger(true);
-    }
-
-    this.eventHandlerMap.set('mirror', handleMirror);
-    this.eventHandlerMap.set('ping room', pingRoom);
+    // to be overriden
   }
 
   handleEvent(event: GameEvent) {
@@ -66,7 +54,6 @@ export class Game {
         type: name,
         payload: payload,
         id: player.socket.id,
-        acknowledger: acknowledger
       };
       this.handleEvent(event);
     });

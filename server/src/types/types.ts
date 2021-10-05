@@ -6,7 +6,6 @@ export interface GameEvent {
   type: string,
   payload: any,
   id: string,
-  acknowledger: Function
 }
 
 export interface GameResponse {
@@ -20,7 +19,6 @@ export interface ManagerEvent {
   type: string,
   payload: any,
   id: string,
-  acknowledger: Function
 }
 
 export interface ManagerResponse {

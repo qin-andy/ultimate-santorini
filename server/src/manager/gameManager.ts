@@ -166,19 +166,17 @@ export class GameManager {
     if (handler) {
       let response = handler(event);
       this.io.to(event.id).emit('manager response', response);
-      event.acknowledger(response);
     }
   }
 
   attachListeners(io: Server) {
     io.on('connect', (socket) => {
       this.playersMap.set(socket.id, new Player(socket, nanoid()));
-      socket.on('manager action', (type: string, payload: any, acknowledger = (response: any) => { }) => {
+      socket.on('manager action', (type: string, payload: any) => {
         let event: ManagerEvent = {
           type,
           payload,
           id: socket.id,
-          acknowledger: (response: any) => { }
         }
         this.handleEvent(event);
       });
