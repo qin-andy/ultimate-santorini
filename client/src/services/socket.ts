@@ -23,12 +23,8 @@ export const joinQueue = () => {
   socket.emit('manager action', 'join queue', null);
 }
 
-export const tictactoeStart = () => {
-  socket.emit('game action', 'tictactoe start');
-}
-
-export const tictactoeMark = (x: number, y: number) => {
-  socket.emit('game action', 'tictactoe mark', { x, y });
+export const joinBotGame = () => {
+  socket.emit('manager action', 'join bot game', null);
 }
 
 export const santoriniStart = () => {

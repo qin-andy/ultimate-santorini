@@ -38,58 +38,33 @@ export class GameManager {
     this.gamesMap.delete(game.name);
   }
 
-  // matchmakePlayersInQueue(): boolean {
-  //   if (this.matchmakingQueue.length >= 2) {
-  //     let player1id = this.matchmakingQueue.shift();
-  //     if (!player1id) return false;
-  //     let player1 = this.playersMap.get(player1id);
-  //     if (!player1 || !player1.socket.connected) return false;
-
-  //     let player2id = this.matchmakingQueue.shift();
-  //     let player2 = this.playersMap.get('' + player2id);
-  //     if (!player2 || !player2.socket.connected) {
-  //       this.matchmakingQueue.push(player1id);
-  //       return false;
-  //     }
-
-  //     // Mokugo variant:
-  //     // let newGame = new TicTacToeAutoGame(player1id + player2id, this.io, this, {x: 9, y: 9, winSize: 5});
-  //     let newGame = new SantoriniAdapter('santorini', this.io, this);
-  //     newGame.addPlayer(player1);
-  //     newGame.addPlayer(player2);
-  //     this.gamesMap.set(newGame.name, newGame);
-
-  //     let response = {
-  //       error: false,
-  //       payload: player1id + player2id,
-  //       type: 'queue game found',
-  //       message: 'game found!'
-  //     }
-  //     this.io.to(player1.socket.id).emit('manager response', response);
-  //     this.io.to(player2.socket.id).emit('manager response', response);
-  //     return true;
-  //   }
-  //   return false;
-  // }
-
   matchmakePlayersInQueue(): boolean {
-    if (this.matchmakingQueue.length > 0) {
+    if (this.matchmakingQueue.length >= 2) {
       let player1id = this.matchmakingQueue.shift();
       if (!player1id) return false;
       let player1 = this.playersMap.get(player1id);
       if (!player1 || !player1.socket.connected) return false;
 
-      let newGame = new BotSantoriniAdapter(player1.socket.id, this.io, this);
+      let player2id = this.matchmakingQueue.shift();
+      let player2 = this.playersMap.get('' + player2id);
+      if (!player2 || !player2.socket.connected) {
+        this.matchmakingQueue.push(player1id);
+        return false;
+      }
+
+      let newGame = new SantoriniAdapter('santorini', this.io, this);
       newGame.addPlayer(player1);
+      newGame.addPlayer(player2);
       this.gamesMap.set(newGame.name, newGame);
 
       let response = {
         error: false,
-        payload: player1id,
+        payload: player1id + player2id,
         type: 'queue game found',
         message: 'game found!'
       }
       this.io.to(player1.socket.id).emit('manager response', response);
+      this.io.to(player2.socket.id).emit('manager response', response);
       return true;
     }
     return false;
@@ -104,21 +79,46 @@ export class GameManager {
         message: ''
       }
       let player = this.playersMap.get(event.id);
-      if (player) {
-        if (!player.inGame) {
-          player.inGame = true;
-          this.matchmakingQueue.push(player.id);
-          this.matchmakePlayersInQueue();
-        } else {
-          response.message = 'player already in game!';
-          response.error = true;
-        }
-      } else {
+      if (!player) {
         response.message = 'player does not exist!';
         response.error = true;
+        return response;
+      } else if (player.inGame) {
+        response.message = 'player already in game!';
+        response.error = true;
+        return response;
       }
+      player.inGame = true;
+      this.matchmakingQueue.push(player.id);
+      this.matchmakePlayersInQueue();
       return response;
     };
+
+    let joinBotGameHandler: ManagerHandler = (event) => {
+      let response: ManagerResponse = {
+        error: false,
+        type: 'join bot game',
+        payload: null,
+        message: ''
+      }
+      let player = this.playersMap.get(event.id);
+      if (!player) {
+        response.message = 'player does not exist!';
+        response.error = true;
+        return response;
+      } else if (player.inGame) {
+        response.message = 'player already in game!';
+        response.error = true;
+        return response;
+      }
+
+      response.payload = player.id;
+      player.inGame = true;
+      let newGame = new BotSantoriniAdapter(player.socket.id, this.io, this);
+      newGame.addPlayer(player);
+      this.gamesMap.set(newGame.name, newGame);
+      return response;
+    }
 
     let leaveGameHandler: ManagerHandler = (event) => {
       let player = this.playersMap.get(event.id);
@@ -158,6 +158,7 @@ export class GameManager {
     };
 
     this.eventHandlerMap.set('join queue', joinQueueHandler);
+    this.eventHandlerMap.set('join bot game', joinBotGameHandler);
     this.eventHandlerMap.set('leave game', leaveGameHandler);
   }
 

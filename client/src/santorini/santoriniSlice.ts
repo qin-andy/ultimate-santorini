@@ -50,7 +50,7 @@ const santoriniSlice = createSlice({
       state.phase = 'postgame';
     },
     santoriniReset(state, action) {
-      state = initialState;
+      state.phase = 'pregame';
     }
   }
 });

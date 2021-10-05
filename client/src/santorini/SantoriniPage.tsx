@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import socket, { getPlayerInfo, joinQueue, santoriniMove, santoriniPlace, santoriniWinMove } from '../services/socket';
+import socket, { getPlayerInfo, joinBotGame, joinQueue, santoriniMove, santoriniPlace, santoriniWinMove } from '../services/socket';
 import { useAppDispatch, useAppSelector } from '../hooks/hooks';
 import { GameResponse, ManagerResponse } from '../types';
 import './santorini.scss';
@@ -45,14 +45,14 @@ const SantoriniPage = () => {
         }
       } else if (response.type === 'win disconnect') {
         timeouts.push(setTimeout(() => {
-          dispatch({type: 'santorini/santoriniReset', payload: {}});
+          dispatch({ type: 'santorini/santoriniReset', payload: {} });
           joinQueue();
         }, 1000));
       }
     });
 
     getPlayerInfo();
-    timeouts.push(setTimeout(() => joinQueue(), 0));
+    // timeouts.push(setTimeout(() => joinQueue(), 0)); // auto join queue on page load
     return () => {
       socket.off('game update')
       socket.off('manager response')
@@ -66,7 +66,6 @@ const SantoriniPage = () => {
     </div>
   );
 }
-
 
 interface SquareData {
   index: number,
@@ -84,7 +83,8 @@ const SantoriniBoard = (props: {}) => {
   const [selectedMove, setSelectedMove] = useState(-1);
   const [highlightMoves, setHighlightMoves] = useState(false);
   const [highlightBuilds, setHighlightBuilds] = useState(false);
-  const [boardData, setBoardData] = useState<SquareData[]>([]); // for finer tuned control of rerendersF
+  const [boardData, setBoardData] = useState<SquareData[]>([]); // for finer tuned control of rerenders
+  const [showButtons, setShowButtons] = useState(true);
 
   const elevations = useAppSelector(state => state.santorini.board);
   const phase = useAppSelector(state => state.santorini.phase);
@@ -172,6 +172,7 @@ const SantoriniBoard = (props: {}) => {
         }
       });
     }
+
     // highlight biulds
     if (selectedMove >= 0 && highlightBuilds) {
       boardData[selectedWorker].worker = '';
@@ -208,7 +209,7 @@ const SantoriniBoard = (props: {}) => {
     setHighlightBuilds(false);
     setSelectedMove(-1);
     setSelectedWorker(-1);
-  }, [workers])
+  }, [workers]);
 
   let boardSquares = boardData.map(squareData => {
     return (
@@ -235,16 +236,73 @@ const SantoriniBoard = (props: {}) => {
   });
 
   return (
-    <AnimateSharedLayout>
-      <div className='santorini-grid' style={{
-        display: `grid`,
-        gridTemplateColumns: `repeat(5, 1fr)`
-      }}>
+    <div>
+      <AnimateSharedLayout>
         <AnimatePresence>
-          {phase === 'pregame' ? null : boardSquares}
+          {showButtons ?
+          <MenuButton
+            text='Matchmaking Queue'
+            onClick={() => {
+              joinQueue();
+              setShowButtons(false);
+            }}
+          /> : null}
+                    {showButtons ?
+          <MenuButton
+            text='Play against Bot'
+            onClick={() => {
+              joinBotGame();
+              setShowButtons(false);
+            }}
+          /> : null}
         </AnimatePresence>
-      </div>
-    </AnimateSharedLayout>
+        <motion.div layout className='santorini-grid' style={{
+          display: `grid`,
+          gridTemplateColumns: `repeat(5, 1fr)`
+        }}>
+          <AnimatePresence>
+            {phase === 'pregame' ? null : boardSquares}
+          </AnimatePresence>
+        </motion.div>
+      </AnimateSharedLayout>
+    </div>
+  )
+}
+
+const MenuButton = (props: { onClick: any, text: string }) => {
+  let buttonVariants = {
+    initial: {
+      opacity: 1,
+      transition: {
+        duration: 1
+      }
+    },
+    show: {
+      opacity: 1,
+      transition: {
+        duration: 1
+      }
+    },
+    exit: {
+      opacity: 0,
+      transition: {
+        duration: 1
+      }
+    }
+  }
+
+  return (
+    <motion.button
+      layout
+      className=""
+      onClick={props.onClick}
+      variants={buttonVariants}
+      initial='initial'
+      animate='show'
+      exit='exit'
+    >
+      {props.text}
+    </motion.button>
   )
 }
 
@@ -274,7 +332,7 @@ const SantoriniSquare = (props: {
     return { x: index % 5, y: Math.floor(index / 5) }
   }
 
-  function onclick() {
+  function onClick() {
     switch (props.phase) {
       case 'placement':
         console.log('sending placement request');
@@ -372,13 +430,14 @@ const SantoriniSquare = (props: {
 
   return (
     <motion.div
+      layout
       className={'santorini-cell'}
       variants={cellVariants}
       animate={props.moveHighlighted ? 'moveHighlighted' : props.buildHighlighted ? 'buildHighlighted' : variant}
       initial='beforeEnter'
       whileHover={variant === 'default' ? 'hover' : ''}
       whileTap={variant === 'default' ? 'popIn' : ''}
-      onClick={onclick}
+      onClick={onClick}
       onAnimationComplete={() => setVariant('default')}
       exit='exit'
       style={props.worker ? { zIndex: 3 } : {}}
