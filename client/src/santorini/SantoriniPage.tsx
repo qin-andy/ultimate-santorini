@@ -1,51 +1,116 @@
-import React, { useEffect, useState } from 'react';
+import React, { Reducer, useEffect, useReducer, useState } from 'react';
+import './santorini.scss';
 
 import socket, { getPlayerInfo, joinBotGame, joinQueue, santoriniMove, santoriniPlace, santoriniWinMove } from '../services/socket';
-import { useAppDispatch, useAppSelector } from '../hooks/hooks';
 import { GameResponse, ManagerResponse } from '../types';
-import './santorini.scss';
 import { AnimatePresence, AnimateSharedLayout, motion } from 'framer-motion';
 
 type Coord = { x: number, y: number };
 
+interface SantoriniSlice {
+  player: 'red' | 'blue' | '',
+  board: number[],
+  workers: Coord[]
+  turn: 'red' | 'blue',
+  phase: 'pregame' | 'placement' | 'build' | 'postgame',
+  winner: 'red' | 'blue' | '',
+  winningCoord: Coord
+}
+
 const SantoriniPage = () => {
-  const dispatch = useAppDispatch();
+
+  const initialState: SantoriniSlice = {
+    player: '',
+    board: [0],
+    workers: [],
+    turn: 'red',
+    phase: 'pregame',
+    winner: '',
+    winningCoord: { x: -1, y: -1 }
+  }
+
+  const reducer: Reducer<SantoriniSlice, any> = (state: SantoriniSlice, action: any) => {
+    let newState: SantoriniSlice;
+    switch (action.type) {
+      case 'start':
+        newState = {
+          ...state,
+          phase: 'placement',
+          board: action.payload.board,
+          workers: action.payload.workers,
+          turn: 'red',
+          player: action.payload.playerColor,
+        }
+        return newState;
+        break;
+      case 'placement':
+        newState = {
+          ...state,
+          board: action.payload.board,
+          workers: action.payload.workers,
+          turn: action.payload.turn,
+        }
+        if (action.payload.done) newState.phase = 'build';
+        return newState;
+        break;
+      case 'move':
+        newState = {
+          ...state,
+          board: action.payload.board,
+          workers: action.payload.workers,
+          turn: action.payload.turn,
+        }
+        return newState;
+        break;
+      case 'won':
+        newState = {
+          ...state,
+          winner: action.payload.winner,
+          winningCoord: action.payload.winningCoord,
+          phase: 'postgame',
+        }
+        return newState;
+        break;
+      case 'reset':
+        newState = {
+          ...state,
+          phase: 'pregame'
+        }
+        return newState;
+        break;
+    }
+    return state;
+  }
+
+  const [state, myDispatch] = useReducer(reducer, initialState);
+
   useEffect(() => {
     let timeouts: NodeJS.Timeout[] = [];
     socket.on('manager response', (response: ManagerResponse) => {
       console.log(response);
-      if (response.type === 'player info') {
-        dispatch({
-          type: 'manager/playerInfoReceived',
-          payload: response.payload
-        });
-      } else if (response.type === '')
-        dispatch({ type: 'manager/managerResponseReceived', payload: response });
     });
 
     socket.on('game update', (response: GameResponse) => {
       console.log(response);
-      dispatch({ type: 'tictactoe/gameResponseReceived', payload: response });
       if (response.type === 'start success') {
         console.log('start receieved, dispatching action');
         let payload = { ...response.payload, playerColor: response.payload.players.red === socket.id ? 'red' : 'blue' };
-        console.log(payload);
-        dispatch({ type: 'santorini/santoriniStarted', payload: payload });
+        myDispatch({ type: 'start', payload: payload });
       } else if (response.type === 'placement update') {
         console.log('placement recieved');
-        dispatch({ type: 'santorini/santoriniWorkerPlaced', payload: response.payload });
+        myDispatch({ type: 'placement', payload: response.payload });
       } else if (response.type === 'santorini move') {
         console.log('move receieved');
-        if (!response.error) dispatch({ type: 'santorini/santoriniMoved', payload: response.payload });
+        if (!response.error) myDispatch({ type: 'move', payload: response.payload });
       } else if (response.type === 'santorini win') {
         console.log('move receieved');
         if (!response.error) {
-          dispatch({ type: 'santorini/santoriniMoved', payload: response.payload });
-          dispatch({ type: 'santorini/santoriniWon', payload: response.payload });
+          myDispatch({ type: 'move', payload: response.payload });
+          myDispatch({ type: 'won', payload: response.payload });
         }
       } else if (response.type === 'win disconnect') {
         timeouts.push(setTimeout(() => {
-          dispatch({ type: 'santorini/santoriniReset', payload: {} });
+          // dispatch({ type: 'santorini/santoriniReset', payload: {} });
           joinQueue();
         }, 1000));
       }
@@ -62,7 +127,7 @@ const SantoriniPage = () => {
 
   return (
     <div className='my-row'>
-      <SantoriniBoard />
+      <SantoriniBoard state={state} />
     </div>
   );
 }
@@ -78,7 +143,7 @@ interface SquareData {
   isWinningCoord: boolean
 }
 
-const SantoriniBoard = (props: {}) => {
+const SantoriniBoard = (props: {state: SantoriniSlice}) => {
   const [selectedWorker, setSelectedWorker] = useState(-1);
   const [selectedMove, setSelectedMove] = useState(-1);
   const [highlightMoves, setHighlightMoves] = useState(false);
@@ -86,11 +151,13 @@ const SantoriniBoard = (props: {}) => {
   const [boardData, setBoardData] = useState<SquareData[]>([]); // for finer tuned control of rerenders
   const [showButtons, setShowButtons] = useState(true);
 
-  const elevations = useAppSelector(state => state.santorini.board);
-  const phase = useAppSelector(state => state.santorini.phase);
-  const workers = useAppSelector(state => state.santorini.workers);
-  const turn = useAppSelector(state => state.santorini.turn);
-  const winningCoord = useAppSelector(state => state.santorini.winningCoord);
+  const elevations = props.state.board; //useAppSelector(state => state.santorini.board);
+  const phase = props.state.phase; //useAppSelector(state => state.santorini.phase);
+  const workers = props.state.workers; //useAppSelector(state => state.santorini.workers);
+  const turn = props.state.turn //useAppSelector(state => state.santorini.turn);
+  const winningCoord = props.state.winningCoord; // useAppSelector(state => state.santorini.winningCoord);
+  const player = props.state.player; // useAppSelector(state => state.santorini.player);
+
 
   function indexToCoord(index: number): Coord {
     return { x: index % 5, y: Math.floor(index / 5) }
@@ -220,6 +287,8 @@ const SantoriniBoard = (props: {}) => {
         worker={squareData.worker}
         workerId={squareData.workerId}
         phase={phase}
+        player={player}
+        turn={turn}
         moveHighlighted={squareData.moveHighlighted}
         buildHighlighted={squareData.buildHighlighted}
         highlightBuilds={highlightBuilds}
@@ -240,21 +309,23 @@ const SantoriniBoard = (props: {}) => {
       <AnimateSharedLayout>
         <AnimatePresence>
           {showButtons ?
-          <MenuButton
-            text='Matchmaking Queue'
-            onClick={() => {
-              joinQueue();
-              setShowButtons(false);
-            }}
-          /> : null}
-                    {showButtons ?
-          <MenuButton
-            text='Play against Bot'
-            onClick={() => {
-              joinBotGame();
-              setShowButtons(false);
-            }}
-          /> : null}
+            <MenuButton
+              text='Matchmaking Queue'
+              key="1"
+              onClick={() => {
+                joinQueue();
+                setShowButtons(false);
+              }}
+            /> : null}
+          {showButtons ?
+            <MenuButton
+              text='Play against Bot'
+              key="2"
+              onClick={() => {
+                joinBotGame();
+                setShowButtons(false);
+              }}
+            /> : null}
         </AnimatePresence>
         <motion.div layout className='santorini-grid' style={{
           display: `grid`,
@@ -312,6 +383,8 @@ const SantoriniSquare = (props: {
   worker: string,
   workerId: number,
   phase: string,
+  player: string,
+  turn: string,
   moveHighlighted: boolean,
   buildHighlighted: boolean,
   setSelectedWorker: Function,
@@ -324,10 +397,8 @@ const SantoriniSquare = (props: {
   updateBoardData: Function,
   isWinningCoord: boolean
 }) => {
-  const turn = useAppSelector(state => state.santorini.turn);
   const [variant, setVariant] = useState('initial');
-  const player = useAppSelector(state => state.santorini.player);
-  const isPlayerTurn = turn === player;
+  const isPlayerTurn = props.turn === props.player;
   function indexToCoord(index: number): Coord {
     return { x: index % 5, y: Math.floor(index / 5) }
   }
@@ -340,7 +411,7 @@ const SantoriniSquare = (props: {
         break;
       case 'build':
         if (isPlayerTurn) {
-          if (props.worker === player && !props.highlightMoves && !props.highlightBuilds) {
+          if (props.worker === props.player && !props.highlightMoves && !props.highlightBuilds) {
             console.log('worker selected, showing moves');
             props.setHighlightMoves(true);
             props.setHighlightBuilds(false);
@@ -447,7 +518,7 @@ const SantoriniSquare = (props: {
         workerId={props.workerId}
         phase={props.phase}
         isWinningCoord={props.isWinningCoord}
-        turn={turn}
+        turn={props.turn}
       />
     </motion.div>
   )
