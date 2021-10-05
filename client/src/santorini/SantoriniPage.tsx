@@ -42,7 +42,6 @@ const SantoriniPage = () => {
           player: action.payload.playerColor,
         }
         return newState;
-        break;
       case 'placement':
         newState = {
           ...state,
@@ -52,7 +51,6 @@ const SantoriniPage = () => {
         }
         if (action.payload.done) newState.phase = 'build';
         return newState;
-        break;
       case 'move':
         newState = {
           ...state,
@@ -61,7 +59,6 @@ const SantoriniPage = () => {
           turn: action.payload.turn,
         }
         return newState;
-        break;
       case 'won':
         newState = {
           ...state,
@@ -70,19 +67,17 @@ const SantoriniPage = () => {
           phase: 'postgame',
         }
         return newState;
-        break;
       case 'reset':
         newState = {
           ...state,
           phase: 'pregame'
         }
         return newState;
-        break;
     }
     return state;
   }
 
-  const [state, myDispatch] = useReducer(reducer, initialState);
+  const [gameState, gameDispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
     let timeouts: NodeJS.Timeout[] = [];
@@ -95,23 +90,24 @@ const SantoriniPage = () => {
       if (response.type === 'start success') {
         console.log('start receieved, dispatching action');
         let payload = { ...response.payload, playerColor: response.payload.players.red === socket.id ? 'red' : 'blue' };
-        myDispatch({ type: 'start', payload: payload });
+        gameDispatch({ type: 'start', payload: payload });
       } else if (response.type === 'placement update') {
         console.log('placement recieved');
-        myDispatch({ type: 'placement', payload: response.payload });
+        gameDispatch({ type: 'placement', payload: response.payload });
       } else if (response.type === 'santorini move') {
         console.log('move receieved');
-        if (!response.error) myDispatch({ type: 'move', payload: response.payload });
+        if (!response.error) gameDispatch({ type: 'move', payload: response.payload });
       } else if (response.type === 'santorini win') {
         console.log('move receieved');
         if (!response.error) {
-          myDispatch({ type: 'move', payload: response.payload });
-          myDispatch({ type: 'won', payload: response.payload });
+          gameDispatch({ type: 'move', payload: response.payload });
+          gameDispatch({ type: 'won', payload: response.payload });
         }
       } else if (response.type === 'win disconnect') {
         timeouts.push(setTimeout(() => {
+          // autorejoin queue after 
           // dispatch({ type: 'santorini/santoriniReset', payload: {} });
-          joinQueue();
+          // joinQueue();
         }, 1000));
       }
     });
@@ -127,7 +123,7 @@ const SantoriniPage = () => {
 
   return (
     <div className='my-row'>
-      <SantoriniBoard state={state} />
+      <SantoriniBoard state={gameState} />
     </div>
   );
 }
@@ -143,34 +139,80 @@ interface SquareData {
   isWinningCoord: boolean
 }
 
-const SantoriniBoard = (props: {state: SantoriniSlice}) => {
-  const [selectedWorker, setSelectedWorker] = useState(-1);
-  const [selectedMove, setSelectedMove] = useState(-1);
-  const [highlightMoves, setHighlightMoves] = useState(false);
-  const [highlightBuilds, setHighlightBuilds] = useState(false);
+const SantoriniBoard = (props: { state: SantoriniSlice }) => {
   const [boardData, setBoardData] = useState<SquareData[]>([]); // for finer tuned control of rerenders
   const [showButtons, setShowButtons] = useState(true);
 
-  const elevations = props.state.board; //useAppSelector(state => state.santorini.board);
-  const phase = props.state.phase; //useAppSelector(state => state.santorini.phase);
-  const workers = props.state.workers; //useAppSelector(state => state.santorini.workers);
-  const turn = props.state.turn //useAppSelector(state => state.santorini.turn);
-  const winningCoord = props.state.winningCoord; // useAppSelector(state => state.santorini.winningCoord);
-  const player = props.state.player; // useAppSelector(state => state.santorini.player);
+  const elevations = props.state.board;
+  const phase = props.state.phase;
+  const workers = props.state.workers;
+  const turn = props.state.turn;
+  const winningCoord = props.state.winningCoord;
+  const player = props.state.player;
 
-
-  function indexToCoord(index: number): Coord {
-    return { x: index % 5, y: Math.floor(index / 5) }
+  interface SelectionState {
+    phase: string,
+    selectedWorker: number,
+    selectedMove: number,
+    highlightBuilds: boolean,
+    highlightMoves: boolean
   }
 
-  function sendAction(buildIndex: number) {
-    let payload = {
-      workerCoord: indexToCoord(selectedWorker),
-      moveCoord: indexToCoord(selectedMove),
-      buildCoord: indexToCoord(buildIndex)
+  let initialSelectionState = {
+    phase: 'select worker',
+    selectedWorker: -1,
+    selectedMove: -1,
+    highlightBuilds: false,
+    highlightMoves: false
+  }
+
+  const selectionReducer: Reducer<SelectionState, any> = (state: SelectionState, action: any) => {
+    let newState: SelectionState;
+    switch (action.type) {
+      case 'select worker':
+        newState = {
+          ...state,
+          phase: 'select move',
+          highlightMoves: true,
+          highlightBuilds: false,
+          selectedWorker: action.coord
+        }
+        return newState;
+      case 'select move':
+        newState = {
+          ...state,
+          phase: 'select build',
+          highlightMoves: true,
+          highlightBuilds: false,
+          selectedMove: action.coord
+        }
+        return newState;
+      case 'select build':
+        let payload = {
+          workerCoord: indexToCoord(state.selectedWorker),
+          moveCoord: indexToCoord(state.selectedMove),
+          buildCoord: indexToCoord(action.coord)
+        }
+        santoriniMove(payload);
+
+        return state;
+      case 'deselect all':
+        newState = {
+          ...state,
+          phase: 'select worker',
+          highlightMoves: false,
+          highlightBuilds: false,
+          selectedWorker: -1,
+          selectedMove: -1
+        }
+        return newState;
     }
-    santoriniMove(payload);
-    console.log(payload);
+    return state;
+  }
+  const [selectionState, selectionDispatch] = useReducer(selectionReducer, initialSelectionState);
+  // emit with curernt selections
+  function indexToCoord(index: number): Coord {
+    return { x: index % 5, y: Math.floor(index / 5) }
   }
 
   // Build board data
@@ -230,24 +272,23 @@ const SantoriniBoard = (props: {state: SantoriniSlice}) => {
     });
 
     // highlight square around selected worker
-    if (selectedWorker >= 0 && highlightMoves) {
-      let adjacentIndexes = getAdjIndexes(selectedWorker);
+    if (selectionState.phase === 'select move') {
+      let adjacentIndexes = getAdjIndexes(selectionState.selectedWorker);
       adjacentIndexes.forEach(index => {
-        if (boardData[index].elevation - boardData[selectedWorker].elevation <= 1
+        if (boardData[index].elevation - boardData[selectionState.selectedWorker].elevation <= 1
           && boardData[index].worker === '') {
           boardData[index].moveHighlighted = true;
         }
       });
     }
 
-    // highlight biulds
-    if (selectedMove >= 0 && highlightBuilds) {
-      boardData[selectedWorker].worker = '';
-      let workerId = boardData[selectedWorker].workerId;
-      boardData[selectedWorker].workerId = -1;
-      boardData[selectedMove].worker = turn;
-      boardData[selectedMove].workerId = workerId;
-      let adjacentIndexes = getAdjIndexes(selectedMove);
+    if (selectionState.phase === 'select build') {
+      boardData[selectionState.selectedWorker].worker = '';
+      let workerId = boardData[selectionState.selectedWorker].workerId;
+      boardData[selectionState.selectedWorker].workerId = -1;
+      boardData[selectionState.selectedMove].worker = turn;
+      boardData[selectionState.selectedMove].workerId = workerId;
+      let adjacentIndexes = getAdjIndexes(selectionState.selectedMove);
       adjacentIndexes.forEach(index => {
         if (boardData[index].worker === '' && boardData[index].elevation <= 3)
           boardData[index].buildHighlighted = true;
@@ -260,25 +301,18 @@ const SantoriniBoard = (props: {state: SantoriniSlice}) => {
     return boardData;
   }
 
-  function updateBoardData() {
-    setBoardData(generateBoardData());
-  }
-
+  useEffect(() => selectionDispatch({ type: 'deselect all' }), [workers]);
   useEffect(() => {
-    if (boardData[selectedMove]?.elevation === 3) santoriniWinMove({
-      moveCoord: indexToCoord(selectedMove), workerCoord: indexToCoord(selectedWorker)
+    if (boardData[selectionState.selectedMove]?.elevation === 3) santoriniWinMove({
+      moveCoord: indexToCoord(selectionState.selectedMove), workerCoord: indexToCoord(selectionState.selectedWorker)
     });
-    updateBoardData();
-  }, [elevations, phase, workers, turn, selectedWorker, selectedMove, highlightBuilds, highlightMoves]);
+    // updateBoardData();
+  },
+    [elevations, phase, workers, turn,
+      selectionState.selectedWorker, selectionState.selectedMove,
+      selectionState.highlightBuilds, selectionState.highlightMoves]);
 
-  useEffect(() => {
-    setHighlightMoves(false);
-    setHighlightBuilds(false);
-    setSelectedMove(-1);
-    setSelectedWorker(-1);
-  }, [workers]);
-
-  let boardSquares = boardData.map(squareData => {
+  let boardSquares = generateBoardData().map(squareData => {
     return (
       <SantoriniSquare
         key={squareData.index}
@@ -289,16 +323,11 @@ const SantoriniBoard = (props: {state: SantoriniSlice}) => {
         phase={phase}
         player={player}
         turn={turn}
+        selectionDispatch={selectionDispatch}
         moveHighlighted={squareData.moveHighlighted}
         buildHighlighted={squareData.buildHighlighted}
-        highlightBuilds={highlightBuilds}
-        highlightMoves={highlightMoves}
-        setSelectedWorker={setSelectedWorker}
-        setSelectedMove={setSelectedMove}
-        setHighlightBuilds={setHighlightBuilds}
-        setHighlightMoves={setHighlightMoves}
-        sendAction={sendAction}
-        updateBoardData={updateBoardData}
+        highlightBuilds={selectionState.highlightBuilds}
+        highlightMoves={selectionState.highlightMoves}
         isWinningCoord={squareData.isWinningCoord}
       />
     );
@@ -340,43 +369,6 @@ const SantoriniBoard = (props: {state: SantoriniSlice}) => {
   )
 }
 
-const MenuButton = (props: { onClick: any, text: string }) => {
-  let buttonVariants = {
-    initial: {
-      opacity: 1,
-      transition: {
-        duration: 1
-      }
-    },
-    show: {
-      opacity: 1,
-      transition: {
-        duration: 1
-      }
-    },
-    exit: {
-      opacity: 0,
-      transition: {
-        duration: 1
-      }
-    }
-  }
-
-  return (
-    <motion.button
-      layout
-      className=""
-      onClick={props.onClick}
-      variants={buttonVariants}
-      initial='initial'
-      animate='show'
-      exit='exit'
-    >
-      {props.text}
-    </motion.button>
-  )
-}
-
 const SantoriniSquare = (props: {
   index: number,
   elevation: number,
@@ -385,16 +377,11 @@ const SantoriniSquare = (props: {
   phase: string,
   player: string,
   turn: string,
+  selectionDispatch: Function,
   moveHighlighted: boolean,
   buildHighlighted: boolean,
-  setSelectedWorker: Function,
-  setSelectedMove: Function,
-  setHighlightBuilds: Function,
-  setHighlightMoves: Function,
-  sendAction: Function,
   highlightBuilds: boolean,
   highlightMoves: boolean,
-  updateBoardData: Function,
   isWinningCoord: boolean
 }) => {
   const [variant, setVariant] = useState('initial');
@@ -411,25 +398,15 @@ const SantoriniSquare = (props: {
         break;
       case 'build':
         if (isPlayerTurn) {
+          // if there is a worker on this space and nothing else is highlighted
           if (props.worker === props.player && !props.highlightMoves && !props.highlightBuilds) {
-            console.log('worker selected, showing moves');
-            props.setHighlightMoves(true);
-            props.setHighlightBuilds(false);
-            props.setSelectedWorker(props.index);
+            props.selectionDispatch({ type: 'select worker', coord: props.index });
           } else if (props.moveHighlighted && !props.worker) {
-            console.log('move selected, showing builds');
-            props.setHighlightMoves(false);
-            props.setHighlightBuilds(true);
-            props.setSelectedMove(props.index);
+            props.selectionDispatch({ type: 'select move', coord: props.index });
           } else if (props.buildHighlighted && !props.worker) {
-            console.log('action dispatched');
-            props.sendAction(props.index);
+            props.selectionDispatch({ type: 'select build', coord: props.index });
           } else {
-            console.log('all deselected');
-            props.setHighlightMoves(false);
-            props.setHighlightBuilds(false);
-            props.setSelectedMove(-1);
-            props.setSelectedWorker(-1);
+            props.selectionDispatch({ type: 'deselect all' });
           }
         }
         break;
@@ -501,7 +478,6 @@ const SantoriniSquare = (props: {
 
   return (
     <motion.div
-      layout
       className={'santorini-cell'}
       variants={cellVariants}
       animate={props.moveHighlighted ? 'moveHighlighted' : props.buildHighlighted ? 'buildHighlighted' : variant}
@@ -595,6 +571,43 @@ const Building = (props: {
     {child}
   </motion.div>
   return child;
+}
+
+const MenuButton = (props: { onClick: any, text: string }) => {
+  let buttonVariants = {
+    initial: {
+      opacity: 1,
+      transition: {
+        duration: 1
+      }
+    },
+    show: {
+      opacity: 1,
+      transition: {
+        duration: 1
+      }
+    },
+    exit: {
+      opacity: 0,
+      transition: {
+        duration: 1
+      }
+    }
+  }
+
+  return (
+    <motion.button
+      layout
+      className=""
+      onClick={props.onClick}
+      variants={buttonVariants}
+      initial='initial'
+      animate='show'
+      exit='exit'
+    >
+      {props.text}
+    </motion.button>
+  )
 }
 
 export default SantoriniPage;
