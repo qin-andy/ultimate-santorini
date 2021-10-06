@@ -74,11 +74,13 @@ export class BotPlayer {
     }
 
     let boardJson = JSON.stringify(board);
+    console.log(boardJson);
     return boardJson
   }
 
   async getMinimaxMove(boardJson: string) {
-    let apiResponse = await fetch('https://localhost:5001/MoveGenerator', {
+    // dev: 'https://localhost:5001/MoveGenerator'
+    let apiResponse = await fetch('https://santorinibotmicroservice20211005205013.azurewebsites.net/MoveGenerator', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
