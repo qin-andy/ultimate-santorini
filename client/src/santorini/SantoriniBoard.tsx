@@ -2,6 +2,7 @@ import { AnimatePresence, AnimateSharedLayout, motion } from "framer-motion";
 import { Reducer, useEffect, useReducer, useState } from "react";
 import { joinBotGame, joinQueue, santoriniMove, santoriniWinMove } from "../services/socket";
 import { SantoriniState, SquareData, SelectionState, Coord } from "../types";
+import { Building } from "./Building";
 import { MenuButton } from "./MenuButton";
 import { SantoriniSquare } from "./SantoriniSquare";
 
@@ -195,24 +196,50 @@ export const SantoriniBoard = (props: { state: SantoriniState }) => {
     <div>
       <AnimateSharedLayout>
         <AnimatePresence>
-          {showButtons ?
-            <MenuButton
-              text='Matchmaking Queue'
-              key="1"
-              onClick={() => {
-                joinQueue();
-                setShowButtons(false);
-              }}
-            /> : null}
-          {showButtons ?
-            <MenuButton
-              text='Play against Bot'
-              key="2"
-              onClick={() => {
-                joinBotGame();
-                setShowButtons(false);
-              }}
-            /> : null}
+          {showButtons ? // main menu
+            <div className="my-column">
+              <motion.h1
+                layout
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+              >
+                Ultimate Santorini
+              </motion.h1>
+              <motion.div
+                animate={{ scale: 1, opacity: 1 }}
+                initial={{ scale: 0, opacity: 0 }}
+                exit={{ scale: 0, opacity: 0 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.8 }}
+                className='santorini-cell'
+              >
+                <Building
+                  elevation={3}
+                  worker={''}
+                  workerId={0}
+                  phase={''}
+                  isWinningCoord={false}
+                  turn={'red'} />
+              </motion.div>
+              <MenuButton
+                text='Search for a Game'
+                key="1"
+                onClick={() => {
+                  setShowButtons(false);
+                  setTimeout(joinQueue, 1000);
+                }}
+              />
+              <MenuButton
+                text='Play against Bot'
+                key="2"
+                onClick={() => {
+                  setShowButtons(false);
+                  setTimeout(joinBotGame, 1000);
+                }}
+              />
+
+            </div> : null}
         </AnimatePresence>
         <motion.div layout className='santorini-grid' style={{
           display: `grid`,
@@ -222,6 +249,12 @@ export const SantoriniBoard = (props: { state: SantoriniState }) => {
             {phase === 'pregame' ? null : boardSquares}
           </AnimatePresence>
         </motion.div>
+        <motion.p
+          className='menu-link footer'
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+        ><a href='https://github.com/qin-andy/ultimate-santorini'>GitHub</a></motion.p>
       </AnimateSharedLayout>
     </div>
   )

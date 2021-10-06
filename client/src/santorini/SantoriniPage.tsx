@@ -66,6 +66,7 @@ const SantoriniPage = () => {
   }
 
   const [gameState, gameDispatch] = useReducer(reducer, initialState);
+  const [showPage, setShowPage] = useState(false);
 
   useEffect(() => {
     let timeouts: NodeJS.Timeout[] = [];
@@ -100,8 +101,8 @@ const SantoriniPage = () => {
       }
     });
 
-    getPlayerInfo();
     // timeouts.push(setTimeout(() => joinQueue(), 0)); // auto join queue on page load
+    timeouts.push(setTimeout(() => setShowPage(true), 500));
     return () => {
       socket.off('game update')
       socket.off('manager response')
@@ -111,7 +112,7 @@ const SantoriniPage = () => {
 
   return (
     <div className='my-row'>
-      <SantoriniBoard state={gameState} />
+      {showPage ? <SantoriniBoard state={gameState} /> : <></>}
     </div>
   );
 }

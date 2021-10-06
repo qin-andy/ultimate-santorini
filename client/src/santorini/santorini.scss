@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;700&display=swap');
+
 $cell-size: 15vh;
 $cell-enter-distance: 20vh;
 $cell-enter-duration: 500ms;
@@ -89,4 +91,37 @@ $elevation-base-size: $cell-size;
     @include building-style(3);
     background-color: rgb(144, 144, 255);
   }
+}
+
+
+.menu-button {
+  display: block;
+  font-family: 'Comfortaa', cursive;
+
+  margin-top: 20px;
+  font-size: 2vh;
+  padding: 2vh;
+
+  border-color:rgb(0, 0, 0);
+  border: 1px;
+  border-style: solid;
+  border-radius: 0vh;
+  cursor: pointer;
+}
+
+.menu-link {
+  display: block;
+  font-family: 'Comfortaa', cursive;
+  color: gray;
+
+  margin-top: 20px;
+  font-size: 1.5vh;
+  padding: 1vh;
+}
+
+.footer {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
 }
